@@ -17,13 +17,22 @@ class ActionSpace(Space):
     def get_valid_moves(self):
         """ Returns all current valid actions """
         if (self.env.continued_action):
-            action = self.env.continued_action
-            next_from = action.get('to')
-            next_to = self.get_next_space(action.get('from'), action.get('to'))
-            next_carry_limit = action.get('carry') - 1
-            return self.get_movements_from_to(next_from, next_to, next_carry_limit)
+            return self.get_available_next_moves(self.env.continued_action)
 
         return self.get_movements() + self.get_placements()
+
+    def get_available_next_moves(self, action):
+        """ 
+        Returns valid continue moves
+        Player must continue moving in same direction
+        """
+
+        action = self.env.continued_action
+        next_from = action.get('to')
+        next_to = self.get_next_space(action.get('from'), action.get('to'))
+        next_carry_limit = action.get('carry') - 1
+        return self.get_movements_from_to(next_from, next_to, next_carry_limit)
+
 
     def get_next_space(self, space_from, space_to):
         diff = np.array(space_to) - np.array(space_from)
@@ -64,6 +73,7 @@ class ActionSpace(Space):
     def get_movements_from_to(self, space_from, space_to, carry_limit):
         """ Returns and array of possible ways for moving from one space to another """
 
+        # force terminal action if there isn't anywhere else to move
         next_space = self.get_next_space(space_from, space_to)
         terminal_options = [True, False] if next_space else [True]
 
