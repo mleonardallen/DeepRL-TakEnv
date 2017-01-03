@@ -6,7 +6,7 @@ class RandomAgent(object):
         self.env = env
 
     def act(self, observation, reward, done):
-        return np.random.choice(range(1, self.env.action_space.n + 1))
+        return self.env.action_space.sample()
 
 class TabularQAgent(object):
     """
