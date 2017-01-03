@@ -43,6 +43,7 @@ class TakEnv(gym.Env):
     def _reset(self):
         self.done = False
         self.turn = 1
+        self.continued_action = None
 
         # keep track of available pieces
         config = TakEnv.CONFIG.get(Board.size)
@@ -81,8 +82,11 @@ class TakEnv(gym.Env):
             return self._feedback(0)
 
         # update player turn
-        if action.get('terminal', False):
+        if action.get('terminal'):
             self.turn *= -1
+            self.continued_action = None
+        else:
+            self.continued_action = action
 
         return self._feedback(0)
 
