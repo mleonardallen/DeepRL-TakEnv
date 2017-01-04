@@ -2,8 +2,9 @@ import numpy as np
 
 # The world's simplest agent!
 class RandomAgent(object):
-    def __init__(self, env):
-        self.env = env
+    def __init__(self, **kwargs):
+        self.env = kwargs.get('env')
+        self.symbol = kwargs.get('symbol')
 
     def act(self, observation, reward, done):
         return self.env.action_space.sample()

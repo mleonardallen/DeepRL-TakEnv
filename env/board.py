@@ -4,14 +4,27 @@ import copy
 
 class Board():
 
-    MAX_HEIGHT = 1
+    BLACK = -1
+    WHITE = 1
+
+    CONFIG = {
+        3: {'pieces': 10, 'capstones': 0},
+        4: {'pieces': 15, 'capstones': 0},
+        5: {'pieces': 21, 'capstones': 1},
+        6: {'pieces': 30, 'capstones': 1},
+        7: {'pieces': 40, 'capstones': 2},
+        8: {'pieces': 50, 'capstones': 2},
+    }
 
     state = {}
-    size = 4
+    available_pieces = {}
+    size = 3
 
     @staticmethod
     def reset():
-        Board.state = np.zeros((Board.MAX_HEIGHT, Board.size, Board.size))
+        Board.state = np.zeros((1, Board.size, Board.size))
+        Board.available_pieces[Board.WHITE] = copy.copy(Board.CONFIG.get(Board.size))
+        Board.available_pieces[Board.BLACK] = copy.copy(Board.CONFIG.get(Board.size))
 
     @staticmethod
     def place(action, player):
@@ -19,6 +32,12 @@ class Board():
         piece = action.get('piece')
         top = Board.get_top_index(space)
         Board.state[top][space] = player * piece.value
+
+        available = Board.get_available_pieces(player)
+        if piece is Stone.CAPITAL:
+            available['capstones'] -= 1
+        else:
+            available['pieces'] -= 1
 
     @staticmethod
     def move(action):
@@ -124,3 +143,20 @@ class Board():
             np.zeros((1, Board.size, Board.size)),
             axis=0
         )
+
+    @staticmethod
+    def get_available_pieces(player):
+        # keep track of available pieces
+        return Board.available_pieces.get(player)
+
+    @staticmethod
+    def get_available_piece_types(player):
+        """ Returns all available types of pieces to place """
+        num_available = Board.get_available_pieces(player)
+        available = []
+        if num_available.get('pieces', 0):
+            available.append(Stone.FLAT)
+            available.append(Stone.STANDING)
+        if num_available.get('captones', 0):
+            available.append(Stone.CAPITAL)
+        return available

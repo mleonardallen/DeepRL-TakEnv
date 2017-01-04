@@ -26,7 +26,6 @@ class ActionSpace(Space):
         Returns valid continue moves
         Player must continue moving in same direction
         """
-
         action = self.env.continued_action
         next_from = action.get('to')
         next_to = self.get_next_space(action.get('from'), action.get('to'))
@@ -49,7 +48,7 @@ class ActionSpace(Space):
             'action': ['place'],
             'terminal': [True],
             'to': Board.get_open_spaces(),
-            'piece': self.get_available_pieces()
+            'piece': Board.get_available_piece_types(self.env.turn)
         })
 
     def get_movements(self):
@@ -91,17 +90,6 @@ class ActionSpace(Space):
                 combinations.remove(i)
 
         return combinations
-
-    def get_available_pieces(self):
-        """ Returns all available places to place """
-        num_available = self.env.get_available()
-        available = []
-        if num_available.get('pieces', 0):
-            available.append(Stone.FLAT)
-            available.append(Stone.STANDING)
-        if num_available.get('captones', 0):
-            available.append(Stone.CAPITAL)
-        return available
 
     def get_combinations(self, variants):
         """ Returns combinations given varients dictionary """

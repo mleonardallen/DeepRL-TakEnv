@@ -10,27 +10,12 @@ from env.space import ActionSpace
 from env.board import Board
 
 class TakEnv(gym.Env):
-    """
-    Tak environment
-    """
-    BLACK = -1
-    WHITE = 1
-
-    CONFIG = {
-        3: {'pieces': 10, 'capstones': 0},
-        4: {'pieces': 15, 'capstones': 0},
-        5: {'pieces': 21, 'capstones': 1},
-        6: {'pieces': 30, 'capstones': 1},
-        7: {'pieces': 40, 'capstones': 2},
-        8: {'pieces': 50, 'capstones': 2},
-    }
-
-    MAX_HEIGHT = 3
+    """ TAK environment loop """
 
     def __init__(self, board_size=4):
         """
         Args:
-            board_size: size of the Tak board
+            board_size: size of the TAK board
         """
         assert isinstance(board_size, int) and board_size >= 3, 'Invalid board size: {}'.format(board_size)
         Board.size = board_size
@@ -43,12 +28,11 @@ class TakEnv(gym.Env):
     def _reset(self):
         self.done = False
         self.turn = 1
+
+        # multipart moves keep track of previous action
         self.continued_action = None
 
-        # keep track of available pieces
-        config = TakEnv.CONFIG.get(Board.size)
-        self.available_pieces = {TakEnv.BLACK: config, TakEnv.WHITE: config}
-
+        # reset board state
         Board.reset()
         self.graph.reset()
 
@@ -56,13 +40,15 @@ class TakEnv(gym.Env):
 
     def _state(self):
         return {
-            'board': Board.state
+            'board': Board.state,
+            'turn': self.turn,
+            'black': Board.get_available_pieces(Board.BLACK),
+            'white': Board.get_available_pieces(Board.WHITE)
         }
 
     def _step(self, action):
 
         if self.done:
-            print(Board.state)
             return self._feedback(0)
 
         # player takes an action
@@ -72,12 +58,17 @@ class TakEnv(gym.Env):
             Board.move(action)
 
         # game ends if win
-        if self.is_win():
+        if self.is_win(self.turn):
             self.done = True
             return self._feedback(1)
 
         # game ends if no open spaces
         if not Board.has_open_spaces():
+            self.done = True
+            return self._feedback(0)
+
+        # game ends if any player runs out of pieces
+        if len(Board.get_available_piece_types(self.turn)) == 0:
             self.done = True
             return self._feedback(0)
 
@@ -88,6 +79,7 @@ class TakEnv(gym.Env):
         else:
             self.continued_action = action
 
+
         return self._feedback(0)
 
     def _feedback(self, reward):
@@ -97,8 +89,5 @@ class TakEnv(gym.Env):
         if close:
             return
 
-    def get_available(self):
-        return self.available_pieces.get(self.turn)
-
-    def is_win(self):
-        return self.graph.is_connected(self.turn)
+    def is_win(self, player):
+        return self.graph.is_connected(player)
