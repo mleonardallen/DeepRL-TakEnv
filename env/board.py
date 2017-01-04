@@ -18,7 +18,7 @@ class Board():
 
     state = {}
     available_pieces = {}
-    size = 3
+    size = None
 
     @staticmethod
     def reset():
@@ -63,15 +63,17 @@ class Board():
 
             Board.state[to_top + idx][place_to] = value
 
-
     @staticmethod
-    def get_owned_spaces(player, only_towards_win=False):
+    def get_owned_spaces(player, stones_types='all'):
         board = Board.get_top_layer()
 
         # determine which stones to look for
         stones = [Stone.FLAT.value, Stone.STANDING.value, Stone.CAPITAL.value]
-        if only_towards_win:
+        if stones_types == 'win':
             stones = [Stone.FLAT.value, Stone.CAPITAL.value]
+        if stones_types == 'flat':
+            stones = [Stone.FLAT.value]
+
         stones = np.array(stones)
         stones *= player
 
@@ -160,3 +162,39 @@ class Board():
         if num_available.get('captones', 0):
             available.append(Stone.CAPITAL)
         return available
+
+    @staticmethod
+    def get_flat_winner():
+        """
+        If no one accomplishes a road win, you can also win by controlling the most spaces with flat stones when the game ends.
+        The game ends when all spaces are covered, or when one player places his last piece. 
+        This is called a "flat win" or "winning the flats."
+        If the flatstone score was tied it is just a tie.
+
+        http://cheapass.com//wp-content/uploads/2016/07/Tak-Beta-Rules.pdf
+        """
+        white = Board.get_owned_spaces(Board.WHITE, stones_types='flat')
+        black = Board.get_owned_spaces(Board.BLACK, stones_types='flat')
+
+        if len(white) > len(black):
+            return Board.WHITE
+        elif len(white) < len(black):
+            return Board.BLACK
+
+        return 0
+
+    @staticmethod
+    def get_points(player, winner):
+
+        if not winner:
+            return 0
+
+        pieces = Board.get_available_pieces(winner)
+
+        score = Board.size ** 2
+        score += pieces.get('pieces')
+        score += pieces.get('capstones')
+
+        # will make negative if player lost
+        score = score * player * winner
+        return score

@@ -1,10 +1,8 @@
 """
 Tak - A Beautiful Game
 """
-
 import gym
 import numpy as np
-
 from env.graph import ConnectionGraph
 from env.space import ActionSpace
 from env.board import Board
@@ -12,7 +10,7 @@ from env.board import Board
 class TakEnv(gym.Env):
     """ TAK environment loop """
 
-    def __init__(self, board_size=4):
+    def __init__(self, board_size=4, scoring='points'):
         """
         Args:
             board_size: size of the TAK board
@@ -22,6 +20,7 @@ class TakEnv(gym.Env):
 
         self.action_space = ActionSpace(env=self)
         self.graph = ConnectionGraph()
+        self.scoring = scoring
 
         self._reset()
 
@@ -60,17 +59,18 @@ class TakEnv(gym.Env):
         # game ends if win
         if self.is_win(self.turn):
             self.done = True
-            return self._feedback(1)
+            score = self.get_score(self.turn)
+            return self._feedback(score)
 
-        # game ends if no open spaces
-        if not Board.has_open_spaces():
+        # game ends if no open spaces or if any player runs out of pieces
+        if (
+            (not Board.has_open_spaces()) or
+            (len(Board.get_available_piece_types(self.turn)) == 0)
+        ):
             self.done = True
-            return self._feedback(0)
-
-        # game ends if any player runs out of pieces
-        if len(Board.get_available_piece_types(self.turn)) == 0:
-            self.done = True
-            return self._feedback(0)
+            winner = Board.get_flat_winner()
+            score = self.get_score(winner)
+            return self._feedback(score)
 
         # update player turn
         if action.get('terminal'):
@@ -79,7 +79,7 @@ class TakEnv(gym.Env):
         else:
             self.continued_action = action
 
-
+        # game still going
         return self._feedback(0)
 
     def _feedback(self, reward):
@@ -88,6 +88,11 @@ class TakEnv(gym.Env):
     def _render(self, mode='human', close=False):
         if close:
             return
+
+    def get_score(self, winner):
+        if self.scoring == 'win':
+            return 1 if self.turn == winner else -1
+        return Board.get_points(self.turn, winner)
 
     def is_win(self, player):
         return self.graph.is_connected(player)

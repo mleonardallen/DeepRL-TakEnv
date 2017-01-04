@@ -21,7 +21,6 @@ class ConnectionGraph():
         node on north side connected to south side
         node on east side connected to west side
         """
-
         # create node graph so we can check if sides are connceted
         G = nx.from_numpy_matrix(self.adjaceny_matrix(player))
 
@@ -43,7 +42,7 @@ class ConnectionGraph():
         """ adjacency matrix indicates what nodes are connected """
 
         adjacency = np.zeros((Board.size**2, Board.size**2))
-        spaces = Board.get_owned_spaces(player, only_towards_win=True)
+        spaces = Board.get_owned_spaces(player, stones_types='win')
 
         # for each space, compare against other spaces to see if they are adjacent
         for space1 in spaces:
@@ -60,7 +59,6 @@ class ConnectionGraph():
         spaces contained in the sides:
         north, south, east, west 
         """
-
         north, south, west, east = [], [], [], []
         for i in range(Board.size):
             north.append(self.get_node_num((0, i)))

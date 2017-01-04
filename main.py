@@ -28,7 +28,6 @@ if __name__ == '__main__':
             ob, reward, done, _ = env.step(action)
 
             if done:
-                print(agent.symbol)
                 break
 
-        print(ob)
+        print('reward', reward, 'player', env.turn)
