@@ -3,23 +3,25 @@ Tak - A Beautiful Game
 """
 import gym
 import numpy as np
-from env.graph import ConnectionGraph
 from env.space import ActionSpace
 from env.board import Board
 
 class TakEnv(gym.Env):
     """ TAK environment loop """
 
-    def __init__(self, board_size=4, scoring='points'):
+    def __init__(self, board_size, scoring, pieces, capstones):
         """
         Args:
             board_size: size of the TAK board
         """
         assert isinstance(board_size, int) and board_size >= 3, 'Invalid board size: {}'.format(board_size)
+
+        # set board properties
         Board.size = board_size
+        Board.pieces = pieces
+        Board.capstones = capstones
 
         self.action_space = ActionSpace(env=self)
-        self.graph = ConnectionGraph()
         self.scoring = scoring
 
         self._reset()
@@ -33,7 +35,6 @@ class TakEnv(gym.Env):
 
         # reset board state
         Board.reset()
-        self.graph.reset()
 
         return self._state()
 
@@ -56,8 +57,8 @@ class TakEnv(gym.Env):
         elif action.get('action') == 'move':
             Board.move(action)
 
-        # game ends if win
-        if self.is_win(self.turn):
+        # game ends when road is connected
+        if Board.is_road_connected(self.turn):
             self.done = True
             score = self.get_score(self.turn)
             return self._feedback(score)
@@ -90,9 +91,6 @@ class TakEnv(gym.Env):
             return
 
     def get_score(self, winner):
-        if self.scoring == 'win':
+        if self.scoring == 'wins':
             return 1 if self.turn == winner else -1
         return Board.get_points(self.turn, winner)
-
-    def is_win(self, player):
-        return self.graph.is_connected(player)

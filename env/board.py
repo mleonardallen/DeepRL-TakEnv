@@ -1,30 +1,41 @@
 import numpy as np
 from env.stone import Stone
+import networkx as nx
 import copy
 
 class Board():
 
     BLACK = -1
     WHITE = 1
-
-    CONFIG = {
-        3: {'pieces': 10, 'capstones': 0},
-        4: {'pieces': 15, 'capstones': 0},
-        5: {'pieces': 21, 'capstones': 1},
-        6: {'pieces': 30, 'capstones': 1},
-        7: {'pieces': 40, 'capstones': 2},
-        8: {'pieces': 50, 'capstones': 2},
-    }
-
     state = {}
     available_pieces = {}
+
+    """
+    Board Size, along with Pieces & Capstones are configured through the environment registration
+
+    register(
+        id='Tak3x3-points-v0',
+        entry_point='env.tak:TakEnv',
+        timestep_limit=200,
+        kwargs={
+            'board_size': 3,
+            'pieces': 10,
+            'capstones': 0,
+            'scoring': 'points'
+        }
+    )
+    """
+
     size = None
+    capstones = None
+    pieces = None
 
     @staticmethod
     def reset():
         Board.state = np.zeros((1, Board.size, Board.size))
-        Board.available_pieces[Board.WHITE] = copy.copy(Board.CONFIG.get(Board.size))
-        Board.available_pieces[Board.BLACK] = copy.copy(Board.CONFIG.get(Board.size))
+        Board.available_pieces[Board.WHITE] = {'pieces': Board.pieces, 'capstones': Board.capstones}
+        Board.available_pieces[Board.BLACK] = {'pieces': Board.pieces, 'capstones': Board.capstones}
+        Board.sides = Board.get_sides()
 
     @staticmethod
     def place(action, player):
@@ -164,6 +175,22 @@ class Board():
         return available
 
     @staticmethod
+    def get_points(player, winner):
+
+        if not winner:
+            return 0
+
+        pieces = Board.get_available_pieces(winner)
+
+        score = Board.size ** 2
+        score += pieces.get('pieces')
+        score += pieces.get('capstones')
+
+        # will make negative if player lost
+        score = score * player * winner
+        return score
+
+    @staticmethod
     def get_flat_winner():
         """
         If no one accomplishes a road win, you can also win by controlling the most spaces with flat stones when the game ends.
@@ -184,17 +211,71 @@ class Board():
         return 0
 
     @staticmethod
-    def get_points(player, winner):
+    def is_road_connected(player):
+        """
+        Determine if two sides of the board are connected by a road
 
-        if not winner:
-            return 0
+        The object is to create a line of your pieces, called a road, connecting two opposite sides of the
+        board. The road does not have to be a straight line. Each stack along the road must be topped by either
+        a flatstone or a capstone in your color. Below is an example of a winning position.
 
-        pieces = Board.get_available_pieces(winner)
+        http://cheapass.com//wp-content/uploads/2016/07/Tak-Beta-Rules.pdf
+        """
 
-        score = Board.size ** 2
-        score += pieces.get('pieces')
-        score += pieces.get('capstones')
+        # create node graph so we can check if sides are connceted
+        G = nx.from_numpy_matrix(Board.adjaceny_matrix(player))
 
-        # will make negative if player lost
-        score = score * player * winner
-        return score
+        # check if North/South sides are connected
+        for pos_north in Board.sides.get('north'):
+            for pos_south in Board.sides.get('south'):
+                if (nx.has_path(G, pos_north, pos_south)):
+                    return True
+
+        # check if East/West sides are connected
+        for pos_west in Board.sides.get('west'):
+            for pos_east in Board.sides.get('east'):
+                if (nx.has_path(G, pos_west, pos_east)):
+                    return True
+
+        return False
+
+    @staticmethod
+    def adjaceny_matrix(player):
+        """ adjacency matrix indicates what nodes are connected """
+
+        adjacency = np.zeros((Board.size**2, Board.size**2))
+        spaces = Board.get_owned_spaces(player, stones_types='win')
+
+        # for each space, compare against other spaces to see if they are adjacent
+        for space1 in spaces:
+            idx1 = Board.get_node_num(space1)
+            for space2 in spaces:
+                if Board.is_adjacent(space1, space2):
+                    idx2 = Board.get_node_num(space2)
+                    adjacency[(idx1, idx2)] = 1
+
+        return adjacency
+
+    @staticmethod
+    def get_sides():
+        """ 
+        spaces contained in the sides:
+        north, south, east, west 
+        """
+        north, south, west, east = [], [], [], []
+        for i in range(Board.size):
+            north.append(Board.get_node_num((0, i)))
+            south.append(Board.get_node_num((Board.size - 1, i)))
+            west.append(Board.get_node_num((i, 0)))
+            east.append(Board.get_node_num((i, Board.size - 1)))
+
+        return {
+            'north': north, 
+            'south': south, 
+            'west': west,
+            'east': east
+        }
+
+    @staticmethod
+    def get_node_num(space):
+        return space[0] * Board.size + space[1]

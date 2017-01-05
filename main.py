@@ -9,7 +9,7 @@ import pandas as pd
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
 
-    parser.add_argument('env_id', nargs='?', default='Tak4x4-v0')
+    parser.add_argument('env_id', nargs='?', default='Tak6x6-points-v0')
     args = parser.parse_args()
     env = gym.make(args.env_id)
 
