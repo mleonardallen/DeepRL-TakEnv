@@ -2,7 +2,7 @@ import argparse
 import gym
 import env.tak
 from env.board import Board
-from agent import RandomAgent
+from agent import RandomAgent, NFQAgent
 
 import pandas as pd
 
@@ -13,7 +13,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     env = gym.make(args.env_id)
 
-    agent_white = RandomAgent(env=env, symbol=Board.WHITE)
+    agent_white = NFQAgent(env=env, symbol=Board.WHITE)
     agent_black = RandomAgent(env=env, symbol=Board.BLACK)
 
     episode_count = 1
@@ -31,3 +31,6 @@ if __name__ == '__main__':
                 break
 
         print('reward', reward, 'player', env.turn)
+        print('white', ob.get('white'))
+        print('black', ob.get('black'))
+        print(ob.get('board'))
