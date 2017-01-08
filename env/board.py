@@ -28,7 +28,7 @@ class Board():
         self.size = size
         self.pieces = pieces
         self.capstones = capstones
-        self.height = 5
+        self.height = 15
 
     def __copy__(self):
         """ get a copy of the board for hallucinating moves """
@@ -39,7 +39,7 @@ class Board():
         return shadow
 
     def reset(self):
-        self.state = np.zeros((self.height, self.size, self.size))
+        self.state = np.zeros((self.size, self.size, self.height))
         self.available_pieces = {}
         self.available_pieces[Board.WHITE] = {'pieces': self.pieces, 'capstones': self.capstones}
         self.available_pieces[Board.BLACK] = {'pieces': self.pieces, 'capstones': self.capstones}
@@ -58,7 +58,7 @@ class Board():
         space = action.get('to')
         piece = action.get('piece')
         top = self.get_top_index(space)
-        self.state[top][space] = player * piece.value
+        self.state[space][top] = player * piece.value
 
         available = self.get_available_pieces(player)
         if piece is Stone.CAPITAL:
@@ -137,17 +137,19 @@ class Board():
 
     def get_top_layer(self):
         merged = []
-        for idx in reversed(range(len(self.state))):
-            layer = copy.copy(self.state[idx])
+        height = self.state.shape[-1]
+        for idx in reversed(range(height)):
+            layer = copy.copy(self.state[:, :, idx])
             if len(merged):
                 layer[merged != 0] = merged[merged != 0]
 
             merged = layer
+
         return merged
 
     def get_top_index(self, space):
-        for idx in range(len(self.state)):
-            if self.state[idx][space] == 0:
+        for idx in range(len(self.state[space])):
+            if self.state[space][idx] == 0:
                 return idx
 
         return len(self.state)

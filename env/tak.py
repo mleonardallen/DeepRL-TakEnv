@@ -37,12 +37,7 @@ class TakEnv(gym.Env):
         return self._state()
 
     def _state(self):
-        return {
-            'board': copy.copy(self.board.state),
-            'turn': self.turn,
-            'black': self.board.get_available_pieces(Board.BLACK),
-            'white': self.board.get_available_pieces(Board.WHITE)
-        }
+        return self.board.state
 
     def _step(self, action):
 
@@ -86,7 +81,11 @@ class TakEnv(gym.Env):
         if not action.get('hallucinate') == True:
             self.done = done
 
-        return state, reward, self.done, {}
+        return state, reward, self.done, {
+            'black': self.board.get_available_pieces(Board.BLACK),
+            'white': self.board.get_available_pieces(Board.WHITE),
+            'turn': self.turn
+        }
 
     def _render(self, mode='human', close=False):
         if close:
