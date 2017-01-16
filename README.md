@@ -1,4 +1,4 @@
-# TAK - A Beautiful Game
+# TAK - A Beautiful Game, Reinforcement Learning Project
 
 Tak is a new abstract strategy game created by James Ernest and Patrick Rothfuss, based on the game in the book “The Wise Man's Fear” by Patrick Rothfuss.  Through KickStarter, the game became funded and finally distributed to backers in December 2016.
 
