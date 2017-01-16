@@ -8,6 +8,6 @@ Rather than approaching as a supervised learning problem, relying on human exper
 
 ## How to Play Rules and Video
 
-[Rules](http://cheapass.com//wp-content/uploads/2016/07/Tak-Beta-Rules.pdf)
+[Rules PDF](http://cheapass.com//wp-content/uploads/2016/07/Tak-Beta-Rules.pdf)
 
 [![How to Play TAK](https://img.youtube.com/vi/iEXkpS-Q9dI/mqdefault.jpg)](https://www.youtube.com/embed/iEXkpS-Q9dI)
