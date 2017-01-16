@@ -24,7 +24,7 @@ class NFQAgent(object):
         self.value_function = value_function
 
         self.config = {
-            "epsilon": 0.05, # Epsilon in epsilon greedy policies
+            "epsilon": 0.1, # Epsilon in epsilon greedy policies
             "discount": 0.95,
             "n_iter": 10000} # Number of iterations
         self.config.update(userconfig)

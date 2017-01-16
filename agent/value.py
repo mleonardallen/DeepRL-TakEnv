@@ -7,6 +7,7 @@ from keras.layers.pooling import MaxPooling2D
 from keras.models import Sequential, Model
 from keras.objectives import mse
 from sklearn.model_selection import train_test_split
+from keras.optimizers import Adam
 import os.path
 import json
 import numpy as np
@@ -17,24 +18,25 @@ class CnnValueFunction(object):
         self.model = self.create_model();
 
     def create_model(self):
+
         model = Sequential([
             # Normalize to keep weight values small with zero mean, improving numerical stability.
-            BatchNormalization(axis=1, input_shape=(6, 6, 15)),
+            BatchNormalization(axis=1, input_shape=(3, 3, 15)),
+            # Conv 2x2
+            Convolution2D(15, 2, 2, border_mode = 'same', activation = 'elu'),
+            SpatialDropout2D(0.1),
+            # Conv 2x2
+            Convolution2D(15, 2, 2, border_mode = 'same', activation = 'elu'),
+            SpatialDropout2D(0.1),
             # Conv 2x2
             Convolution2D(30, 2, 2, border_mode = 'same', activation = 'elu'),
-            SpatialDropout2D(0.2),
-            # Conv 2x2
-            Convolution2D(60, 2, 2, border_mode = 'same', activation = 'elu'),
-            SpatialDropout2D(0.2),
-            # Conv 2x2
-            Convolution2D(90, 2, 2, border_mode = 'same', activation = 'elu'),
-            SpatialDropout2D(0.2),
+            SpatialDropout2D(0.1),
             # Flatten
             Flatten(),
             # Fully Connected
-            Dense(100, activation = 'elu', W_regularizer = l2(1e-6)),
-            Dense(50, activation = 'elu', W_regularizer = l2(1e-6)),
-            Dense(10, activation = 'elu', W_regularizer = l2(1e-6)),
+            Dense(100, activation = 'elu'),
+            Dense(20, activation = 'elu'),
+            Dense(10, activation = 'elu'),
             Dense(1)
         ])
         model.summary()
@@ -42,7 +44,8 @@ class CnnValueFunction(object):
         if os.path.isfile('model.h5'):
             model.load_weights('model.h5')
 
-        model.compile(loss = CnnValueFunction.loss, optimizer = 'adam')
+        optimizer = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
+        model.compile(loss = CnnValueFunction.loss, optimizer = optimizer)
         return model
 
     def predict(self, X):
@@ -53,4 +56,9 @@ class CnnValueFunction(object):
         return mse(y_true, y_pred)
 
     def fit(self, X, y):
-        self.model.fit(X, y, batch_size=32, nb_epoch=3)
+        self.model.fit(X, y, batch_size=128, nb_epoch=3, shuffle=True)
+
+    def save(self):
+        with open('model.json', 'w') as outfile:
+            json.dump(self.model.to_json(), outfile)
+        self.model.save_weights('model.h5')

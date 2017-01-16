@@ -94,4 +94,5 @@ class TakEnv(gym.Env):
     def get_score(self, winner):
         if self.scoring == 'wins':
             return 1 if self.turn == winner else -1
+
         return self.board.get_points(self.turn, winner)

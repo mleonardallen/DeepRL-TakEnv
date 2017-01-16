@@ -37,7 +37,7 @@ class ActionSpace(Space):
         new_to = space_to + diff
 
         if new_to[0] not in range(self.env.board.size) or new_to[1] not in range(self.env.board.size):
-            return False
+            return None
 
         return tuple(new_to)
 
@@ -71,24 +71,33 @@ class ActionSpace(Space):
     def get_movements_from_to(self, space_from, space_to, carry_limit):
         """ Returns and array of possible ways for moving from one space to another """
 
-        # force terminal action if there isn't anywhere else to move
-        next_space = self.get_next_space(space_from, space_to)
-        terminal_options = [True, False] if next_space else [True]
-
         combinations = self.get_combinations({
             'carry': [i for i in range(1, carry_limit + 1)],
-            'terminal': terminal_options,
+            'terminal': [True, False],
             'from': [space_from],
             'to': [space_to],
             'action': ['move']
         })
 
-        # all moves that carry one piece are terminal
-        for i in combinations:
-            if not i.get('terminal') and i.get('carry') == 1:
-                combinations.remove(i)
+        next_space = self.get_next_space(space_from, space_to)
+        keep = []
 
-        return combinations
+        for i in combinations:
+
+            pieces = self.env.board.get_pieces_at_space(space_from, i.get('carry'))
+            can_move = self.env.board.can_move(space_from, space_to, pieces)
+            can_move_next = self.env.board.can_move(space_to, next_space, pieces[-1:])
+
+            if not can_move:
+                continue
+            elif not i.get('terminal') and i.get('carry') == 1:
+                continue
+            elif not i.get('terminal') and not can_move_next:
+                continue
+
+            keep.append(i)
+
+        return keep
 
     def get_combinations(self, variants):
         """ Returns combinations given varients dictionary """
