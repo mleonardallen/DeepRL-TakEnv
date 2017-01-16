@@ -7,6 +7,5 @@ The problem at hand is to program an agent that is able to play the boardgame Ta
 Rather than approaching as a supervised learning problem, relying on human expertise to craft features, a possible solution is to leverage reinforcement learning, allowing the agent to learn the game over time.
 
 ## How to Play Rules and Video
----
 [Rules](http://cheapass.com//wp-content/uploads/2016/07/Tak-Beta-Rules.pdf)
 [![How to Play TAK](https://img.youtube.com/vi/iEXkpS-Q9dI/mqdefault.jpg)](https://www.youtube.com/embed/iEXkpS-Q9dI)
