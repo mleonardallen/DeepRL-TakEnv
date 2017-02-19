@@ -5,10 +5,16 @@ import gym
 import numpy as np
 from env.space import ActionSpace
 from env.board import Board
+from env.viewer import Viewer
 import copy
 
 class TakEnv(gym.Env):
     """ TAK environment loop """
+
+    metadata = {
+        'render.modes': ['human'],
+        'video.frames_per_second' : 50
+    }
 
     def __init__(self, board_size, scoring, pieces, capstones):
         """
@@ -25,6 +31,7 @@ class TakEnv(gym.Env):
         self.board = Board(size=board_size, pieces=pieces, capstones=capstones)
         self.action_space = ActionSpace(env=self)
         self.scoring = scoring
+        self.viewer = Viewer(board_size=board_size)
         self._reset()
 
     def _reset(self):
@@ -90,6 +97,9 @@ class TakEnv(gym.Env):
     def _render(self, mode='human', close=False):
         if close:
             return
+
+        self.viewer.render(self.board.state)
+
 
     def get_score(self, winner):
         if self.scoring == 'wins':

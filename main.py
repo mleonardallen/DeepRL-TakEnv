@@ -8,13 +8,10 @@ from agent.value import CnnValueFunction
 import pandas as pd
 import numpy as np
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=None)
+def main(args):
 
-    parser.add_argument('env_id', nargs='?', default='Tak3x3-wins-v0')
-    args = parser.parse_args()
     env = gym.make(args.env_id)
-    cnn = CnnValueFunction()
+    cnn = CnnValueFunction(env.board.size)
 
     agent_white = NFQAgent(value_function=cnn, env=env, symbol=Board.WHITE)
     agent_black = RandomAgent(env=env, symbol=Board.BLACK)
@@ -28,6 +25,7 @@ if __name__ == '__main__':
     for i in range(episode_count):
         state = env.reset()
         while True:
+
             agent = agent_white if env.turn == agent_white.symbol else agent_black
             action = agent.act(state, reward, done)
             player = env.turn
@@ -41,6 +39,9 @@ if __name__ == '__main__':
 
             records.append(experience)
             state = state_prime
+
+            if args.render:
+                env.render()
 
             if done:
                 break
@@ -83,4 +84,14 @@ if __name__ == '__main__':
     cnn.save()
 
     print('average', np.mean(records, axis=0)[2])
-# save weights for next run
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=None)
+
+    parser.add_argument('env_id', nargs='?', default='Tak4x4-wins-v0')
+    parser.add_argument('--render', dest='render', action='store_true')
+    parser.add_argument('--log', dest='log', action='store_true')
+
+    args = parser.parse_args()
+    main(args)

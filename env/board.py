@@ -78,17 +78,18 @@ class Board():
         from_top = self.get_top_index(place_from)
 
         for idx in range(from_top - carry, from_top):
-            values.append(self.state[idx][place_from])
-            self.state[idx][place_from] = 0
+            values.append(self.state[place_from][idx])
+            self.state[place_from][idx] = 0
 
         to_top = self.get_top_index(place_to)
 
         for idx, value in enumerate(values):
+            # TODO FIX THIS
             # when moving, first make sure the layer exists
-            if to_top + idx == len(self.state):
-                self.add_layer()
+            # if to_top + idx == len(self.state):
+            #     self.add_layer()
 
-            self.state[to_top + idx][place_to] = value
+            self.state[place_to][to_top + idx] = value
 
     def get_owned_spaces(self, player, stones_types = None):
         """Return spaces owned by player
@@ -109,23 +110,52 @@ class Board():
         spaces = np.array(np.where(ix))
         return tuple((zip(*spaces)))
 
-    def get_movement_spaces(self, captital = False):
+    def get_movement_spaces(self):
         board = self.get_top_layer()
+        # todo valid movement pieces are filtered out later because of combinations,
+        # todo simplify this.
         # available spaces to move
-        stones = [0, Stone.FLAT.value, -Stone.FLAT.value]
-        # capital stone can move on top of standing stones
-        if captital:
-            stones = [
-                0, 
-                Stone.FLAT.value,
-                -Stone.FLAT.value,
-                Stone.STANDING.value,
-                -Stone.STANDING.value
-            ]
+        stones = [
+            Stone.EMPTY.value, 
+            Stone.FLAT.value,
+            -Stone.FLAT.value,
+            Stone.STANDING.value,
+            -Stone.STANDING.value
+        ]
 
         ix = np.in1d(board.ravel(), stones).reshape(board.shape)
         spaces = np.array(np.where(ix))
         return tuple((zip(*spaces)))
+
+    def can_move(self, space_from, space_to, pieces = []):
+
+        if not space_to:
+            return False
+
+        to_piece = self.get_pieces_at_space(space_to , 1)
+
+        # all stones can move on empty or flat stones
+        if to_piece[-1] in [Stone.EMPTY, Stone.FLAT]:
+            return True
+
+        # capital stones can move on flat stones
+        result = pieces[-1] == Stone.CAPITAL and to_piece == Stone.STANDING and len(pieces) == 1
+
+        return result
+
+    def get_pieces_at_space(self, space, num_pieces):
+        idx = self.get_top_index(space)
+        if idx == 0:
+            return [Stone.EMPTY]
+
+        pieces = []
+        top_occupied = idx - 1
+        for i in range(num_pieces):
+            to_value = self.state[space][top_occupied - i]
+            to_value = np.absolute(to_value)
+            pieces.insert(0, Stone(to_value))
+
+        return pieces
 
     def get_open_spaces(self):
         board = self.get_top_layer()
@@ -189,6 +219,7 @@ class Board():
 
     def get_points(self, player, winner):
 
+        # game tied if no winner
         if not winner:
             return 0
 

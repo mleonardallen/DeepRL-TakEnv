@@ -14,14 +14,16 @@ import numpy as np
 
 class CnnValueFunction(object):
 
-    def __init__(self):
+    def __init__(self, board_size):
+        self.board_size = board_size
+        self.filename = 'model-' + str(self.board_size)
         self.model = self.create_model();
 
     def create_model(self):
 
         model = Sequential([
             # Normalize to keep weight values small with zero mean, improving numerical stability.
-            BatchNormalization(axis=1, input_shape=(3, 3, 15)),
+            BatchNormalization(axis=1, input_shape=(self.board_size, self.board_size, 15)),
             # Conv 2x2
             Convolution2D(15, 2, 2, border_mode = 'same', activation = 'elu'),
             SpatialDropout2D(0.1),
@@ -41,8 +43,8 @@ class CnnValueFunction(object):
         ])
         model.summary()
 
-        if os.path.isfile('model.h5'):
-            model.load_weights('model.h5')
+        if os.path.isfile(self.filename + '.h5'):
+            model.load_weights(self.filename + '.h5')
 
         optimizer = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
         model.compile(loss = CnnValueFunction.loss, optimizer = optimizer)
@@ -59,6 +61,6 @@ class CnnValueFunction(object):
         self.model.fit(X, y, batch_size=128, nb_epoch=3, shuffle=True)
 
     def save(self):
-        with open('model.json', 'w') as outfile:
+        with open(self.filename + '.json' , 'w') as outfile:
             json.dump(self.model.to_json(), outfile)
-        self.model.save_weights('model.h5')
+        self.model.save_weights(self.filename + '.h5')
