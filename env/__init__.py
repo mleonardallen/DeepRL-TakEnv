@@ -3,6 +3,20 @@ from gym.envs.registration import register
 # SCORING BY POINTS
 
 register(
+    id='Tak3x3-points-basic-v0',
+    entry_point='env.tak:TakEnv',
+    timestep_limit=200,
+    kwargs={
+        'board_size': 3,
+        'pieces': 10,
+        'standing': False,
+        'movements': False,
+        'capstones': 0,
+        'scoring': 'wins'
+    }
+)
+
+register(
     id='Tak3x3-points-v0',
     entry_point='env.tak:TakEnv',
     timestep_limit=200,
@@ -87,6 +101,20 @@ register(
 )
 
 # SCORING BY WINS
+
+register(
+    id='Tak3x3-wins-basic-v0',
+    entry_point='env.tak:TakEnv',
+    timestep_limit=200,
+    kwargs={
+        'board_size': 3,
+        'pieces': 10,
+        'standing': False,
+        'movements': False,
+        'capstones': 0,
+        'scoring': 'wins'
+    }
+)
 
 register(
     id='Tak3x3-wins-v0',

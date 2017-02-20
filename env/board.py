@@ -24,11 +24,13 @@ class Board():
     )
     """
 
-    def __init__(self, size, pieces, capstones):
+    def __init__(self, size, pieces, capstones, standing=True, flatstones=True):
         self.size = size
         self.pieces = pieces
         self.capstones = capstones
-        self.height = 15
+        self.height = 1
+        self.standing=standing
+        self.flatstones=flatstones
 
     def __copy__(self):
         """ get a copy of the board for hallucinating moves """
@@ -212,6 +214,7 @@ class Board():
         available = []
         if num_available.get('pieces', 0):
             available.append(Stone.FLAT)
+        if num_available.get('pieces', 0) and self.standing:
             available.append(Stone.STANDING)
         if num_available.get('capstones', 0):
             available.append(Stone.CAPITAL)

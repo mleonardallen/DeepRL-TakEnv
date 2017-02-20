@@ -6,10 +6,11 @@ import getch
 
 class Viewer():
 
-    def __init__(self, board_size=3, delay=1):
+    def __init__(self, env, delay=1):
 
         self.block_size = 150
-        self.board_size = (board_size, board_size)
+        self.env = env
+        self.board_size = (self.env.board.size, self.env.board.size)
 
         self.colors = {
             'black': (0, 0, 0),
@@ -67,7 +68,7 @@ class Viewer():
 
 
         self.screen = self.pygame.display.set_mode(self.size)
-        self.font = self.pygame.font.Font(None, 128)
+        self.font = self.pygame.font.Font(None, 64)
 
     def render(self, state):
 
@@ -80,8 +81,25 @@ class Viewer():
                 for height, stone in enumerate(column):
                     self.stone(stone, (rowidx, colidx), height)
 
+        if self.env.done:
+            reward = self.env.reward * self.env.turn
+            if reward > 0:
+                text = 'White Wins'
+            elif reward < 0:
+                text = 'Black Wins'
+            else:
+                text = 'Tie'
+
+            label = self.font.render(text, 1, (0,0,0))
+            self.screen.blit(label, (0, 0))
+
         self.pygame.display.flip()
-        time.sleep(self.delay)
+        if self.env.done:
+            print("Press any key to continue...")
+            getch.getche()
+        else:
+            time.sleep(self.delay)
+        
 
 
     def stone(self, value, position, height):

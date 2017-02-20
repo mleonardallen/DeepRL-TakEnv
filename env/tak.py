@@ -16,7 +16,8 @@ class TakEnv(gym.Env):
         'video.frames_per_second' : 50
     }
 
-    def __init__(self, board_size, scoring, pieces, capstones):
+    def __init__(self, board_size, scoring, pieces, capstones, standing=True, movements=True, placements=True):
+
         """
         Args:
             board_size: size of the TAK board
@@ -28,10 +29,10 @@ class TakEnv(gym.Env):
         assert isinstance(capstones, int) and capstones >= 0 and capstones <= 2, 'Invalid number of capstones: {}'.format(capstones)
 
         # set board properties
-        self.board = Board(size=board_size, pieces=pieces, capstones=capstones)
-        self.action_space = ActionSpace(env=self)
+        self.board = Board(size=board_size, pieces=pieces, capstones=capstones, standing=standing)
+        self.action_space = ActionSpace(env=self, movements=movements, placements=placements)
         self.scoring = scoring
-        self.viewer = Viewer(board_size=board_size)
+        self.viewer = Viewer(env=self)
         self._reset()
 
     def _reset(self):
@@ -54,7 +55,7 @@ class TakEnv(gym.Env):
         # if hallucinating action, make a copy to keep board pristine
         board = self.board
         if action.get('hallucinate'):
-            board = copy.copy(self.board)
+            board = copy.deepcopy(self.board)
 
         board.act(action, self.turn)
 
@@ -68,6 +69,7 @@ class TakEnv(gym.Env):
             (not board.has_open_spaces()) or
             (len(board.get_available_piece_types(self.turn)) == 0)
         ):
+            return self._feedback(action, reward=0, done=True)
             winner = board.get_flat_winner()
             score = self.get_score(winner)
             return self._feedback(action, reward=score, done = True)
@@ -85,8 +87,11 @@ class TakEnv(gym.Env):
     def _feedback(self, action, reward, done):
         state = self._state()
 
+        # if hallucinating, ignore done state
         if not action.get('hallucinate') == True:
             self.done = done
+
+        self.reward = reward
 
         return state, reward, self.done, {
             'black': self.board.get_available_pieces(Board.BLACK),

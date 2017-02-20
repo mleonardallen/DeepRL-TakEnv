@@ -1,12 +1,14 @@
-from gym import Space
+
 import numpy as np
 import itertools as it
 from env.stone import Stone
 
-class ActionSpace(Space):
+class ActionSpace():
 
     def __init__(self, **kwargs):
         self.env = kwargs.get('env')
+        self.movements = kwargs.get('movements')
+        self.placements = kwargs.get('placements')
 
     def sample(self):
         """ Returns a array with one sample from each discrete action space """
@@ -18,7 +20,14 @@ class ActionSpace(Space):
         if (self.env.continued_action):
             return self.get_available_next_moves(self.env.continued_action)
 
-        return self.get_movements() + self.get_placements()
+        # These conditionals allow env configuration to turn off some move types
+        # ex: Tak3x3-points-basic-v0
+        if self.movements and self.placements:
+            return self.get_movements() + self.get_placements()
+        elif self.movements:
+            return self.get_movements()
+        else:
+            return self.get_placements()
 
     def get_available_next_moves(self, action):
         """ 
