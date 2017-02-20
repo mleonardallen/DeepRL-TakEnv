@@ -24,6 +24,8 @@ def main(args):
         state = env.reset()
         env.turn = np.random.choice([1, -1])
         while True:
+
+            state = copy.copy(state)
             # Get current active player
             agent = agent_white if env.turn == agent_white.symbol else agent_black
             # Take an action
@@ -37,8 +39,7 @@ def main(args):
             dispatcher.send( signal='main.experience', sender={}, experience=experience)
 
             # update the state for next iteration
-            # reward = reward * player
-            # print('reward', reward)
+            state = state_prime
 
             if args.render:
                 env.render()
@@ -63,6 +64,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
 
     parser.add_argument('env_id', nargs='?', default='Tak3x3-wins-v0')
+
     parser.add_argument('--iter', dest='iter', default=1000)
     parser.add_argument('--render', dest='render', action='store_true')
     parser.add_argument('--log', dest='log', action='store_true')

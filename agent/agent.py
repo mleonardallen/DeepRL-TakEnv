@@ -37,8 +37,11 @@ class NFQAgent(object):
 
         self.config = {
             "epsilon": 0.1, #Epsilon in epsilon greedy policies
-            "n_iter": 30,
-            "discount": 0.8
+            "alpha": 0.9,
+            "n_iter": 100,
+            "discount": 0.8,
+            "nb_epoch": 3,
+            "batch_size": 256
         }
         self.config.update(userconfig)
 
@@ -49,8 +52,7 @@ class NFQAgent(object):
     def get_state_prime(self, action):
         # copy action so we don't modifiy original action
         action = copy.copy(action)
-
-        # save turn so we can restore after halluci
+        # save turn so we can restore after hallucination
         turn = self.env.turn
         action['hallucinate'] = True
         ob, reward, done, _ = self.env.step(action)
@@ -84,33 +86,45 @@ class NFQAgent(object):
 
         n_iter = self.config["n_iter"]
         for j in range(n_iter):
+            print("Iteration:", j)
 
             # 1) Get values for next states
             state_primes = []
+            states = []
             for idx, experience in enumerate(experiences):
                 state, action, reward, state_prime, player, player_prime = experience
 
                 # prediction from next players perspective
+                states.append(state * player + 0)
                 state_primes.append(state_prime * player_prime + 0)
 
+            qs = self.predict(np.array(states))
             q_primes = self.predict(np.array(state_primes))
 
             # 2) Update values according to bellman equation
             X, y = [], []
             for idx, q_prime in enumerate(q_primes):
                 state, action, reward, state_prime, player, player_prime = experiences[idx]
-                # print('---')
-                # print(reward)
-                # self.env.viewer.render(state)
-                # self.env.viewer.render(state_prime)
 
                 # Q(s,a) <- r + γ * max_a' Q(s',a')
                 reward = reward * player
                 future = q_prime[0] * player_prime
+
+                print('---')
+                print('reward', reward, 'player', player)
+                print('future', future, 'player_prime', player_prime)
+                print(action)
+                # self.env.viewer.render(state)
+                self.env.viewer.render(state_prime)
+
                 γ = self.config["discount"]
+                α = self.config["alpha"]
+
+                value = qs[idx][0]
+                value = (1 - α) * value + α * (reward + γ * future)
 
                 X.append(state)
-                y.append(reward + γ * future)
+                y.append(value)
 
             X, y = np.array(X), np.array(y)
 
@@ -123,12 +137,10 @@ class NFQAgent(object):
     def create_model(self):
         input_shape=(self.env.board.size, self.env.board.size, self.env.board.height)
         model = Sequential([
-            Convolution2D(2, 2, 2, border_mode='same', activation='elu', input_shape=input_shape),
-            SpatialDropout2D(0.2),
-            Convolution2D(4, 2, 2, border_mode='same', activation='elu', input_shape=input_shape),
-            SpatialDropout2D(0.2),
-            Flatten(),
-            Dense(100, activation = 'elu'),
+            Flatten(input_shape=input_shape),
+            Dense(100, activation='elu'),
+            Dropout(0.2),
+            Dense(20, activation='elu'),
             Dropout(0.2),
             Dense(1)
         ])
@@ -142,7 +154,7 @@ class NFQAgent(object):
 
     def fit(self, X, y):
         # earlyStopping=EarlyStopping(monitor='val_loss', patience=0, verbose=0, mode='auto')
-        self.model.fit(X, y, batch_size=256, nb_epoch=2, shuffle=True)
+        self.model.fit(X, y, batch_size=self.config["batch_size"], nb_epoch=self.config["nb_epoch"], shuffle=True)
 
     def predict(self, X):
         return self.model.predict(X)
@@ -151,4 +163,3 @@ class NFQAgent(object):
         with open(self.id + '.json' , 'w') as outfile:
             json.dump(self.model.to_json(), outfile)
         self.model.save_weights(self.id + '.h5')
-
