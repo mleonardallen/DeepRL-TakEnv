@@ -37,7 +37,10 @@ class Board():
         shadow = type(self)(self.size, self.pieces, self.capstones)
         shadow.state = copy.deepcopy(self.state)
         shadow.available_pieces = copy.deepcopy(self.available_pieces)
+
         shadow.sides = self.sides
+        shadow.standing = self.standing
+        shadow.flatstones = self.flatstones
         return shadow
 
     def reset(self):

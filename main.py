@@ -12,7 +12,7 @@ def main(args):
 
     env = gym.make(args.env_id)
 
-    agent_white = NFQAgent(env=env, symbol=Board.WHITE)
+    agent_white = NFQAgent(env=env, symbol=Board.WHITE, learn=args.learn)
     agent_black = RandomAgent(env=env, symbol=Board.BLACK)
 
     rewards = []
@@ -67,6 +67,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--iter', dest='iter', default=1000)
     parser.add_argument('--render', dest='render', action='store_true')
+    parser.add_argument('--learn', dest='learn', action='store_true')
     parser.add_argument('--log', dest='log', action='store_true')
 
     args = parser.parse_args()

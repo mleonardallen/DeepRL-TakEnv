@@ -38,6 +38,7 @@ class TakEnv(gym.Env):
     def _reset(self):
         self.done = False
         self.turn = 1
+        self.reward = 0
         self.board.reset()
         # multipart moves keep track of previous action
         self.continued_action = None
@@ -52,11 +53,7 @@ class TakEnv(gym.Env):
         if self.done:
             return self._feedback(action, reward=0, done = True)
 
-        # if hallucinating action, make a copy to keep board pristine
         board = self.board
-        if action.get('hallucinate'):
-            board = copy.deepcopy(self.board)
-
         board.act(action, self.turn)
 
         # game ends when road is connected
@@ -87,10 +84,7 @@ class TakEnv(gym.Env):
     def _feedback(self, action, reward, done):
         state = self._state()
 
-        # if hallucinating, ignore done state
-        if not action.get('hallucinate') == True:
-            self.done = done
-
+        self.done = done
         self.reward = reward
 
         return state, reward, self.done, {

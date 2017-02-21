@@ -1,12 +1,13 @@
 import importlib
 import time
 from env.stone import Stone
+from env.board import Board
 import os
 import getch
 
 class Viewer():
 
-    def __init__(self, env, delay=1):
+    def __init__(self, env, delay=0.3):
 
         self.block_size = 150
         self.env = env
@@ -69,6 +70,7 @@ class Viewer():
 
         self.screen = self.pygame.display.set_mode(self.size)
         self.font = self.pygame.font.Font(None, 64)
+        self.font_small = self.pygame.font.Font(None, 32)
 
     def render(self, state):
 
@@ -80,6 +82,14 @@ class Viewer():
             for colidx, column in enumerate(row):
                 for height, stone in enumerate(column):
                     self.stone(stone, (rowidx, colidx), height)
+
+        black = self.env.board.available_pieces.get(Board.BLACK)
+        white = self.env.board.available_pieces.get(Board.WHITE)
+
+        black_label = self.font_small.render('Black: ' + str(black.get('pieces')), 1, (0,0,0))
+        self.screen.blit(black_label, (350, 5))
+        white_label = self.font_small.render('White: ' + str(white.get('pieces')), 1, (0,0,0))
+        self.screen.blit(white_label, (348, 25))
 
         if self.env.done:
             reward = self.env.reward * self.env.turn
