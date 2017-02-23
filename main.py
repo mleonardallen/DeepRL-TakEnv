@@ -13,7 +13,6 @@ def main(args):
     env = gym.make(args.env_id)
 
     agent_white = NFQAgent(env=env, symbol=Board.WHITE, learn=args.learn)
-    # agent_white = RandomAgent(env=env, symbol=Board.WHITE)
     agent_black = RandomAgent(env=env, symbol=Board.BLACK)
 
     rewards = []
@@ -51,6 +50,7 @@ def main(args):
             if done:
                 break
 
+        # record the "absorbing" state
         experience = np.array([copy.copy(state), None, reward, None, player, player_prime])
         dispatcher.send( signal='main.experience', sender={}, experience=experience)
 
