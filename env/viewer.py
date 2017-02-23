@@ -86,21 +86,21 @@ class Viewer():
         black = self.env.board.available_pieces.get(Board.BLACK)
         white = self.env.board.available_pieces.get(Board.WHITE)
 
-        black_label = self.font_small.render('Black: ' + str(black.get('pieces')), 1, (0,0,0))
-        self.screen.blit(black_label, (350, 5))
-        white_label = self.font_small.render('White: ' + str(white.get('pieces')), 1, (0,0,0))
-        self.screen.blit(white_label, (348, 25))
+        white_label = self.font_small.render('White: ' + str(white.get('pieces')), 1, (0,0,255))
+        self.screen.blit(white_label, (348, 5))
+        black_label = self.font_small.render('Black: ' + str(black.get('pieces')), 1, (0,0,255))
+        self.screen.blit(black_label, (350, 25))
 
         if self.env.done:
             reward = self.env.reward * self.env.turn
             if reward > 0:
-                text = 'White Wins'
+                text = 'White Wins!'
             elif reward < 0:
-                text = 'Black Wins'
+                text = 'Black Wins!'
             else:
                 text = 'Tie'
 
-            label = self.font.render(text, 1, (0,0,0))
+            label = self.font.render(text, 1, (255,0,0))
             self.screen.blit(label, (0, 0))
 
         self.pygame.display.flip()

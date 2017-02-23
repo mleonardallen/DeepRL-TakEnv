@@ -11,7 +11,7 @@ from keras.models import Sequential
 import time
 
 from keras.layers.pooling import MaxPooling2D
-# from keras.regularizers import l2
+from keras.regularizers import l2
 # from keras.layers.normalization import BatchNormalization
 # from keras.callbacks import EarlyStopping
 
@@ -40,10 +40,10 @@ class NFQAgent(object):
 
         self.config = {
             "epsilon": 0.1, #Epsilon in epsilon greedy policies
-            "n_iter": 20,
-            "discount": 0.8,
-            "nb_epoch": 1,
-            "batch_size": 256
+            "n_iter": 30,
+            "discount": 0.9,
+            "nb_epoch": 3,
+            "batch_size": 128,
         }
         self.config.update(userconfig)
 
@@ -56,14 +56,16 @@ class NFQAgent(object):
     def create_model(self):
         input_shape=(self.env.board.size, self.env.board.size, self.env.board.height)
         model = Sequential([
-            Convolution2D(9, 1, 1, input_shape=input_shape, border_mode='same', activation='elu'),
-            SpatialDropout2D(0.2),
-            Convolution2D(9, 1, 1, input_shape=input_shape, border_mode='same', activation='elu'),
-            MaxPooling2D(border_mode='same'),
-            SpatialDropout2D(0.2),
-            Convolution2D(18, 1, 1, border_mode='same', activation='elu'),
-            MaxPooling2D(border_mode='same'),
-            SpatialDropout2D(0.2),
+            # Flatten(input_shape=input_shape),
+            Convolution2D(2, 2, 2, init='normal', border_mode='same', activation='elu', input_shape=input_shape),
+            SpatialDropout2D(0.3),
+
+            Convolution2D(4, 2, 2, init='normal', border_mode='same', activation='elu'),
+            SpatialDropout2D(0.3),
+
+            Convolution2D(8, 2, 2, init='normal', border_mode='same', activation='elu'),
+            SpatialDropout2D(0.3),
+
             Flatten(),
             Dense(1)
         ])
@@ -77,20 +79,23 @@ class NFQAgent(object):
 
     def get_state_prime(self, action):
         # copy so we can restore after hallucination
+        # todo encapsulate in __copy__ method of the env
         turn = self.env.turn
         reward = self.env.reward
         board = copy.copy(self.env.board)
+        continued_action = copy.copy(self.env.continued_action)
 
         # hallucinate move
-        ob, reward, done, _ = self.env.step(action)
+        result = self.env.step(action)
 
         # restore environment
         self.env.done = False
         self.env.turn = turn
         self.env.reward = reward
         self.env.board = board
+        self.env.continued_action = continued_action
 
-        return copy.copy(ob)
+        return copy.copy(result[0])
 
     def act(self, state):
 
@@ -105,7 +110,6 @@ class NFQAgent(object):
         # get best action, random if more than one best
         state_primes = np.array([self.get_state_prime(action) for action in valid_actions])
         values = self.model.predict(state_primes)
-
         actions = [action for idx, action in enumerate(valid_actions) if values[idx] == np.max(values)]
         action = np.random.choice(actions)
         return action
@@ -119,36 +123,39 @@ class NFQAgent(object):
 
         n_iter = self.config["n_iter"]
         for j in range(n_iter):
-            print("Iteration:", j)
+            print("\nIteration:", j)
 
             # 1) Get values for next states
             state_primes = []
             for idx, experience in enumerate(experiences):
                 state, action, reward, state_prime, player, player_prime = experience
-
                 # prediction from next players perspective
-                state_primes.append(state_prime * player_prime + 0)
-
+                if state_prime is not None:
+                    state_primes.append(state_prime * player_prime + 0)
             q_primes = self.model.predict(np.array(state_primes))
 
             # 2) Update values according to bellman equation
             X, y = [], []
-            for idx, q_prime in enumerate(q_primes):
-                state, action, reward, state_prime, player, player_prime = experiences[idx]
+            for idx, experience in enumerate(experiences):
+                state, action, reward, state_prime, player, player_prime = experience
+                q_prime = q_primes[idx][0] if idx < len(q_primes) else 0
 
                 # Q(s,a) <- r + γ * max_a' Q(s',a')
                 reward = reward * player
-                future = q_prime[0] * player_prime * player
-
+                future = q_prime * player_prime
                 γ = self.config["discount"]
 
                 X.append(state)
                 y.append(reward + γ * future)
-
             X, y = np.array(X), np.array(y)
 
             # 3) Fit
-            self.model.fit(X, y, batch_size=self.config["batch_size"], nb_epoch=self.config["nb_epoch"], shuffle=True)
+            self.model.fit(
+                X, y,
+                batch_size=self.config["batch_size"],
+                nb_epoch=self.config["nb_epoch"],
+                shuffle=True
+            )
 
         self.save()
 

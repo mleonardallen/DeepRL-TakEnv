@@ -13,6 +13,7 @@ def main(args):
     env = gym.make(args.env_id)
 
     agent_white = NFQAgent(env=env, symbol=Board.WHITE, learn=args.learn)
+    # agent_white = RandomAgent(env=env, symbol=Board.WHITE)
     agent_black = RandomAgent(env=env, symbol=Board.BLACK)
 
     rewards = []
@@ -22,7 +23,9 @@ def main(args):
     for i in range(int(args.iter)):
 
         state = env.reset()
+        reward = 0
         env.turn = np.random.choice([1, -1])
+
         while True:
 
             state = copy.copy(state)
@@ -31,7 +34,7 @@ def main(args):
             # Take an action
             action = agent.act(state)
             player = env.turn
-            state_prime, reward, done, _ = env.step(action)
+            state_prime, reward_prime, done, _ = env.step(action)
             player_prime = env.turn
 
             # allow agents to save experience
@@ -40,12 +43,16 @@ def main(args):
 
             # update the state for next iteration
             state = state_prime
+            reward = reward_prime
 
             if args.render:
                 env.render()
 
             if done:
                 break
+
+        experience = np.array([copy.copy(state), None, reward, None, player, player_prime])
+        dispatcher.send( signal='main.experience', sender={}, experience=experience)
 
         reward = reward * player
         rewards.append(reward)

@@ -51,7 +51,7 @@ class TakEnv(gym.Env):
     def _step(self, action):
 
         if self.done:
-            return self._feedback(action, reward=0, done = True)
+            return self._feedback(action, reward=0, done=True)
 
         board = self.board
         board.act(action, self.turn)
@@ -59,17 +59,18 @@ class TakEnv(gym.Env):
         # game ends when road is connected
         if board.is_road_connected(self.turn):
             score = self.get_score(self.turn)
-            return self._feedback(action, reward=score, done = True)
+            return self._feedback(action, reward=score, done=True)
 
         # game ends if no open spaces or if any player runs out of pieces
         if (
             (not board.has_open_spaces()) or
             (len(board.get_available_piece_types(self.turn)) == 0)
         ):
+            # TODO REMOVE
             return self._feedback(action, reward=0, done=True)
             winner = board.get_flat_winner()
             score = self.get_score(winner)
-            return self._feedback(action, reward=score, done = True)
+            return self._feedback(action, reward=score, done=True)
 
         # update player turn
         if action.get('terminal'):
