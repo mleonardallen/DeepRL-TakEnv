@@ -1,6 +1,5 @@
 import numpy as np
 import copy
-from pydispatch import dispatcher
 import json
 import os.path
 
@@ -33,8 +32,6 @@ class NFQAgent(object):
 
         self.env = userconfig.get('env')
         self.symbol = userconfig.get('symbol')
-        self.learn = userconfig.get('learn')
-
         self.id = self.env.spec.id
         self.model = self.create_model();
 
@@ -47,26 +44,28 @@ class NFQAgent(object):
         }
         self.config.update(userconfig)
 
-        self.experiences = []
-
-        if self.learn:
-            dispatcher.connect(self.add_experience, signal='main.experience', sender=dispatcher.Any)
-            dispatcher.connect(self.experience_replay, signal='main.complete', sender=dispatcher.Any)
-
     def create_model(self):
-        input_shape=(self.env.board.size, self.env.board.size, self.env.board.height)
+        height = self.env.board.height
+        input_shape=(self.env.board.size, self.env.board.size, height)
         model = Sequential([
-            # Flatten(input_shape=input_shape),
-            Convolution2D(2, 2, 2, init='normal', border_mode='same', activation='elu', input_shape=input_shape),
-            SpatialDropout2D(0.3),
 
-            Convolution2D(4, 2, 2, init='normal', border_mode='same', activation='elu'),
-            SpatialDropout2D(0.3),
+            Convolution2D(height*2, 2, 2, init='normal', border_mode='same', activation='elu', input_shape=input_shape),
+            SpatialDropout2D(0.2),
 
-            Convolution2D(8, 2, 2, init='normal', border_mode='same', activation='elu'),
-            SpatialDropout2D(0.3),
+            Convolution2D(height*3, 2, 2, init='normal', border_mode='same', activation='elu'),
+            SpatialDropout2D(0.2),
+
+            Convolution2D(height*4, 2, 2, init='normal', border_mode='same', activation='elu'),
+            SpatialDropout2D(0.2),
 
             Flatten(),
+
+            Dense(100, activation='elu'),
+            Dropout(0.2),
+
+            Dense(50, activation='elu'),
+            Dropout(0.2),
+
             Dense(1)
         ])
         model.summary()
@@ -114,42 +113,54 @@ class NFQAgent(object):
         action = np.random.choice(actions)
         return action
 
-    def add_experience(self, experience):
-        """ add experience for experience replay """
-        self.experiences.append(experience)
-
-    def experience_replay(self):
-        experiences = np.array(self.experiences)
+    def experience_replay(self, experiences):
 
         n_iter = self.config["n_iter"]
         for j in range(n_iter):
             print("\nIteration:", j)
 
+            ###
             # 1) Get values for next states
-            state_primes = []
-            for idx, experience in enumerate(experiences):
-                state, action, reward, state_prime, player, player_prime = experience
-                # prediction from next players perspective
-                if state_prime is not None:
-                    state_primes.append(state_prime * player_prime + 0)
-            q_primes = self.model.predict(np.array(state_primes))
+            ###
 
+            booleanMask = experiences['state_prime'].notnull()
+
+            # get state prime, and keep track of indexes for later when mapping back onto full array
+            state_primes = experiences[booleanMask]['state_prime']
+            idxs = state_primes.index.values
+            state_primes = np.array([state for state in state_primes.values])
+
+            # see state prime from player prime's perspective and predict value
+            player_primes = experiences[booleanMask]['player_prime']
+            state_primes = np.multiply(state_primes, player_primes.values[:, np.newaxis, np.newaxis, np.newaxis]) + 0
+            pred_q_primes = self.model.predict(state_primes).reshape(-1)
+
+            # map predictions back onto full array containing absorbing states
+            q_primes = np.zeros(len(experiences.index))
+            for j, idx in enumerate(idxs):
+                q_primes[idx] = pred_q_primes[j]
+            # minimax - good reward for player prime is bad reward for player
+            player_primes = experiences['player_prime'].values
+            q_primes = np.multiply(q_primes, player_primes)
+
+            ###
             # 2) Update values according to bellman equation
-            X, y = [], []
-            for idx, experience in enumerate(experiences):
-                state, action, reward, state_prime, player, player_prime = experience
-                q_prime = q_primes[idx][0] if idx < len(q_primes) else 0
+            ###
 
-                # Q(s,a) <- r + γ * max_a' Q(s',a')
-                reward = reward * player
-                future = q_prime * player_prime
-                γ = self.config["discount"]
+            X = experiences['state'].values
+            X = np.array([x for x in X])
+            rewards = experiences['reward'].values
+            players = experiences['player'].values
+            # minimax - good reward for player prime is bad reward for player
+            rewards = np.multiply(rewards, players)
 
-                X.append(state)
-                y.append(reward + γ * future)
-            X, y = np.array(X), np.array(y)
+            # Q(s,a) <- r + γ * max_a' Q(s',a')
+            γ = self.config["discount"]
+            y = np.add(rewards, γ * q_primes)
 
+            ###
             # 3) Fit
+            ###
             self.model.fit(
                 X, y,
                 batch_size=self.config["batch_size"],

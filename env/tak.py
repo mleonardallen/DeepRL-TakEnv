@@ -16,7 +16,7 @@ class TakEnv(gym.Env):
         'video.frames_per_second' : 50
     }
 
-    def __init__(self, board_size, scoring, pieces, capstones, standing=True, movements=True, placements=True):
+    def __init__(self, board_size, scoring, pieces, capstones, height):
 
         """
         Args:
@@ -29,9 +29,10 @@ class TakEnv(gym.Env):
         assert isinstance(capstones, int) and capstones >= 0 and capstones <= 2, 'Invalid number of capstones: {}'.format(capstones)
 
         # set board properties
-        self.board = Board(size=board_size, pieces=pieces, capstones=capstones, standing=standing)
-        self.action_space = ActionSpace(env=self, movements=movements, placements=placements)
+        self.board = Board(size=board_size, pieces=pieces, capstones=capstones, height=height)
+        self.action_space = ActionSpace(env=self)
         self.scoring = scoring
+
         self.viewer = Viewer(env=self)
         self._reset()
 
@@ -66,8 +67,6 @@ class TakEnv(gym.Env):
             (not board.has_open_spaces()) or
             (len(board.get_available_piece_types(self.turn)) == 0)
         ):
-            # TODO REMOVE
-            return self._feedback(action, reward=0, done=True)
             winner = board.get_flat_winner()
             score = self.get_score(winner)
             return self._feedback(action, reward=score, done=True)

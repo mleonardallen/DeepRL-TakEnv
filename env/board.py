@@ -24,23 +24,18 @@ class Board():
     )
     """
 
-    def __init__(self, size, pieces, capstones, standing=True, flatstones=True):
+    def __init__(self, size, pieces, capstones, height):
         self.size = size
         self.pieces = pieces
         self.capstones = capstones
-        self.height = 1
-        self.standing=standing
-        self.flatstones=flatstones
+        self.height = height
 
     def __copy__(self):
         """ get a copy of the board for hallucinating moves """
-        shadow = type(self)(self.size, self.pieces, self.capstones)
+        shadow = type(self)(self.size, self.pieces, self.capstones, self.height)
         shadow.state = copy.deepcopy(self.state)
         shadow.available_pieces = copy.deepcopy(self.available_pieces)
-
         shadow.sides = self.sides
-        shadow.standing = self.standing
-        shadow.flatstones = self.flatstones
         return shadow
 
     def reset(self):
@@ -217,7 +212,7 @@ class Board():
         available = []
         if num_available.get('pieces', 0):
             available.append(Stone.FLAT)
-        if num_available.get('pieces', 0) and self.standing:
+        if num_available.get('pieces', 0):
             available.append(Stone.STANDING)
         if num_available.get('capstones', 0):
             available.append(Stone.CAPITAL)
