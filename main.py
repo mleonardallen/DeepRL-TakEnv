@@ -15,7 +15,14 @@ def main(args):
     env = gym.make(args.env_id)
 
     agent_white = NFQAgent(env=env, symbol=Board.WHITE)
-    agent_black = RandomAgent(env=env, symbol=Board.BLACK)
+
+    if args.player == 'random':
+        agent_black = RandomAgent(env=env, symbol=Board.BLACK)
+    elif args.player == 'trained':
+        agent_black = NFQAgent(env=env, symbol=Board.BLACK)
+    elif args.player == 'human':
+        # todo
+        pass
 
     if mode == 'record':
         experiences = []
@@ -70,7 +77,7 @@ def main(args):
 
         experiences.loc[:, 'state'] = experiences['state'].apply(convert)
         experiences.loc[:, 'state_prime'] = experiences['state_prime'].apply(convert)
-        agent_white.experience_replay(experiences)
+        agent_white.experience_replay(experiences, args.iter)
 
 
 def convert(state):
@@ -121,7 +128,8 @@ if __name__ == '__main__':
 
     parser.add_argument('env_id', nargs='?', default='Tak3x3-wins-v0')
     parser.add_argument('--mode', nargs='?', default='play', choices=['train', 'record', 'play'])
-    parser.add_argument('--iter', dest='iter', default=1000)
+    parser.add_argument('--player', nargs='?', default='random', choices=['random', 'human', 'trained'])
+    parser.add_argument('--iter', dest='iter', type=int, default=1000)
     parser.add_argument('--render', dest='render', action='store_true')
     parser.add_argument('--log', dest='log', action='store_true')
 

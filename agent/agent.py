@@ -12,7 +12,7 @@ import time
 from keras.layers.pooling import MaxPooling2D
 from keras.regularizers import l2
 # from keras.layers.normalization import BatchNormalization
-# from keras.callbacks import EarlyStopping
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 class RandomAgent(object):
     def __init__(self, **userconfig):
@@ -37,7 +37,7 @@ class NFQAgent(object):
 
         self.config = {
             "epsilon": 0.1, #Epsilon in epsilon greedy policies
-            "n_iter": 30,
+            "n_iter": 1,
             "discount": 0.9,
             "nb_epoch": 3,
             "batch_size": 128,
@@ -60,20 +60,17 @@ class NFQAgent(object):
 
             Flatten(),
 
-            Dense(100, activation='elu'),
-            Dropout(0.2),
-
-            Dense(50, activation='elu'),
-            Dropout(0.2),
-
             Dense(1)
         ])
         model.summary()
 
-        if os.path.isfile(self.id + '.h5'):
-            model.load_weights(self.id + '.h5')
+        if os.path.isfile(self.id + '.hdf5'):
+            model.load_weights(self.id + '.hdf5')
 
-        model.compile(loss='mse', optimizer='adam')
+        model.compile(loss='mse', optimizer='adam', callbacks=[
+            EarlyStopping(monitor='val_loss'),
+            ModelCheckpoint(filepath=self.id + '.hdf5', monitor='val_loss', save_best_only=True)
+        ])
         return model
 
     def get_state_prime(self, action):
@@ -107,15 +104,14 @@ class NFQAgent(object):
             return self.env.action_space.sample()
 
         # get best action, random if more than one best
-        state_primes = np.array([self.get_state_prime(action) for action in valid_actions])
+        state_primes = np.array([self.get_state_prime(action) for action in valid_actions]) * self.symbol + 0
         values = self.model.predict(state_primes)
         actions = [action for idx, action in enumerate(valid_actions) if values[idx] == np.max(values)]
         action = np.random.choice(actions)
         return action
 
-    def experience_replay(self, experiences):
+    def experience_replay(self, experiences, n_iter=0):
 
-        n_iter = self.config["n_iter"]
         for j in range(n_iter):
             print("\nIteration:", j)
 
@@ -167,10 +163,3 @@ class NFQAgent(object):
                 nb_epoch=self.config["nb_epoch"],
                 shuffle=True
             )
-
-        self.save()
-
-    def save(self):
-        with open(self.id + '.json' , 'w') as outfile:
-            json.dump(self.model.to_json(), outfile)
-        self.model.save_weights(self.id + '.h5')
