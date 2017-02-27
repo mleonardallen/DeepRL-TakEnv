@@ -6,3 +6,5 @@ Tak is a new abstract strategy board game created by James Ernest and Patrick Ro
 [Rules PDF](http://cheapass.com/wp-content/uploads/2016/05/TakWebRules.pdf)
 
 [![How to Play TAK](https://img.youtube.com/vi/iEXkpS-Q9dI/mqdefault.jpg)](https://www.youtube.com/embed/iEXkpS-Q9dI)
+
+[Project Proposal](https://github.com/mleonardallen/tak/blob/master/project-proposal.pdf)
