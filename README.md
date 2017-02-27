@@ -25,6 +25,8 @@ Data is generated through an agent interacting with a simulated environment.  Th
 Reinforcement learning agents can then leverage these recorded experiences to learn the expected long term reward of any given state.  Using these values, the learning agent chooses the best action to take given a state.
 Reinforcement learning agents can then leverage these recorded experiences to learn the expected long term reward of any given state.  Using these values, the learning agent chooses the best action to take given a state.
 
+|Item|Description|
+|----|-----------|
 |State|State of the simulated environment before taking an action.  State is structured as a 3d-array of the shape: board size x board size x board height.  This structure is conveniently suited for convolutional neural network layers.|
 |Action|Action taken by the agent at given state.|
 |Reward|Reward agent received by taking action.  Reward is crafted to match game score as described in evaluation metrics.|
