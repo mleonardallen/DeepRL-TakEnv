@@ -5,16 +5,19 @@ import copy
 import json
 
 import gym
-import env.tak
-from env.board import Board
-from agent.agent import RandomAgent, NFQAgent
+
+import tak.env
+from tak.board import Board
+from tak.agent import RandomAgent, NFQAgent
+from tak.experience import Experience
+from peewee import fn
 
 def main(args):
 
     mode = args.mode
     env = gym.make(args.env_id)
 
-    agent_white = NFQAgent(env=env, symbol=Board.WHITE)
+    agent_white = NFQAgent(env=env, symbol=Board.WHITE, epsilon=args.epsilon)
 
     if args.player == 'random':
         agent_black = RandomAgent(env=env, symbol=Board.BLACK)
@@ -25,27 +28,14 @@ def main(args):
         pass
 
     if mode == 'record':
-        experiences = []
         for i in range(int(args.iter)):
 
             if i % 20 == 0 and i > 0:
                 print('Episode', i)
 
             loop_experiences = agent_environment_loop(env, agent_white, agent_black, render=False)
-            experiences += loop_experiences
-
-        print("Saving...")
-        experiences = np.array(experiences)
-        experiences = pd.DataFrame({
-            'state': experiences[:,0],
-            'action': experiences[:,1],
-            'reward': experiences[:,2],
-            'state_prime': experiences[:,3],
-            'player': experiences[:,4],
-            'player_prime': experiences[:,5],
-        })
-        experiences = experiences[['state', 'action', 'reward', 'state_prime', 'player', 'player_prime']]
-        experiences.to_csv(args.env_id + '.csv', mode='a', header=False)
+            q = Experience.insert_many(loop_experiences)
+            q.execute()
 
     if mode == 'play':
         results = []
@@ -55,7 +45,9 @@ def main(args):
                 print('Episode', i)
 
             experiences = agent_environment_loop(env, agent_white, agent_black, render=args.render)
-            state, action, reward, state_prime, player, player_prime = experiences[-1]
+            state, action, reward, state_prime, player, player_prime, env_id = map(experiences[-1].get, 
+                ('state', 'action', 'reward', 'state_prime', 'player', 'player_prime', 'env_id')
+            )
 
             # convert reward to player one's perspective
             reward = reward * player
@@ -71,14 +63,18 @@ def main(args):
         print('Wins:', wins, 'Losses:', losses, 'Ties:', ties)
 
     if mode == 'train':
-        experiences = pd.read_csv(args.env_id + '.csv', header=None,
-            names=['state', 'action', 'reward', 'state_prime', 'player', 'player_prime'])
-        experiences.fillna(False, inplace=True)
+        query = Experience.select() \
+            .where(Experience.env_id == args.env_id) \
+            .order_by(fn.Rand()) \
+            .limit(args.limit)
 
+        experiences = pd.DataFrame([x for x in query.dicts()])
+
+        experiences.fillna(False, inplace=True)
         experiences.loc[:, 'state'] = experiences['state'].apply(convert)
         experiences.loc[:, 'state_prime'] = experiences['state_prime'].apply(convert)
-        agent_white.experience_replay(experiences, args.iter)
 
+        agent_white.experience_replay(experiences, n_iter=args.iter)
 
 def convert(state):
     if state:
@@ -106,7 +102,15 @@ def agent_environment_loop(env, agent_white, agent_black, render=False):
         player_prime = env.turn
 
         # record the experience
-        experiences.append([json.dumps(state.tolist()), copy.copy(action), reward, json.dumps(state_prime.tolist()), player, player_prime])
+        experiences.append({
+            'state': json.dumps(state.tolist()),
+            'action': copy.copy(action),
+            'reward': reward,
+            'state_prime': json.dumps(state_prime.tolist()),
+            'player': player,
+            'player_prime': player_prime,
+            'env_id': env.spec.id
+        })
 
         # update the state for next iteration
         state = state_prime
@@ -119,19 +123,31 @@ def agent_environment_loop(env, agent_white, agent_black, render=False):
             break
 
     # record the "absorbing" state/experience
-    experiences.append([json.dumps(state.tolist()), None, reward, None, player, player_prime])
+    experiences.append({
+        'state': json.dumps(state.tolist()),
+        'action': '',
+        'reward': reward,
+        'state_prime': '',
+        'player': player,
+        'player_prime': player_prime,
+        'env_id': env.spec.id
+    })
 
     return experiences
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
 
-    parser.add_argument('env_id', nargs='?', default='Tak3x3-wins-v0')
+    parser.add_argument('env_id', nargs='?', default='Tak3x3-points-v0')
     parser.add_argument('--mode', nargs='?', default='play', choices=['train', 'record', 'play'])
     parser.add_argument('--player', nargs='?', default='random', choices=['random', 'human', 'trained'])
-    parser.add_argument('--iter', dest='iter', type=int, default=1000)
+
+    parser.add_argument('--iter', dest='iter', type=int, default=0)
+    parser.add_argument('--limit', dest='limit', type=int, default=30000)
+
     parser.add_argument('--render', dest='render', action='store_true')
     parser.add_argument('--log', dest='log', action='store_true')
+    parser.add_argument('--epsilon', dest='epsilon', type=float, default=0.1)
 
     args = parser.parse_args()
     main(args)
