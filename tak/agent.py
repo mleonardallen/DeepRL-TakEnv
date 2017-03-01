@@ -13,63 +13,39 @@ from keras.regularizers import l2
 # from keras.layers.normalization import BatchNormalization
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 
-class RandomAgent(object):
+class Agent(object):
+
     def __init__(self, **userconfig):
+
         self.env = userconfig.get('env')
         self.symbol = userconfig.get('symbol')
+
+class RandomAgent(Agent):
 
     def act(self, state):
         return self.env.action_space.sample()
 
-class NFQAgent(object):
+class LearnerAgent(Agent):
 
     """
-    Agent implementing Neural Fitted Q-learning.
+    Learner Agent
     """
 
     def __init__(self, **userconfig):
 
-        self.env = userconfig.get('env')
-        self.symbol = userconfig.get('symbol')
-        self.id = self.env.spec.id
-        self.model = self.create_model();
+        Agent.__init__(self, **userconfig)
 
         self.config = {
-            "discount": 0.9,
+            # exploration probability
             "epsilon": 0.1
         }
         self.config.update(userconfig)
 
-    def create_model(self):
-        height = self.env.board.height
-        input_shape=(self.env.board.size, self.env.board.size, height)
-
-        inputs = Input(shape=input_shape)
-
-        layer = self.Fire_module(inputs, [height, height*2, height*2, height*2])
-        layer = SpatialDropout2D(0.2)(layer)
-        layer = self.Fire_module(layer, [height*2, height*3, height*3, height*3])
-        layer = SpatialDropout2D(0.2)(layer)
-
-        layer = Flatten()(layer)
-        layer = Dense(1)(layer)
-
-        model = Model(input=inputs,output=layer)
-
-        model.compile(loss='mse', optimizer='adam')
-        model.summary()
-
-        if os.path.isfile(self.id + '.h5'):
-            model.load_weights(self.id + '.h5')
-
-        return model
-
-    def Fire_module(self, input_layer,nb_kernel):
-        squeeze  = Convolution2D(nb_kernel[0], 1, 1, border_mode='same', activation='elu')(input_layer)
-        expand_1x1 = Convolution2D(nb_kernel[1], 1, 1, border_mode='same', activation='elu')(squeeze)
-        expand_2x2 = Convolution2D(nb_kernel[2], 2, 2, border_mode='same', activation='elu')(squeeze)
-        expend_3x3 = Convolution2D(nb_kernel[3], 3, 3, border_mode='same', activation='elu')(squeeze)
-        return merge([expand_1x1,expand_2x2, expend_3x3], mode='concat', concat_axis=1)
+        self.value_function = ValueFunction(
+            size=self.env.board.size,
+            height=self.env.board.height,
+            id=self.env.spec.id
+        )
 
     def get_state_prime(self, action):
         # copy so we can restore after hallucination
@@ -104,10 +80,62 @@ class NFQAgent(object):
 
         # get best action, random if more than one best
         state_primes = np.array([self.get_state_prime(action) for action in valid_actions])
-        values = self.model.predict(state_primes)
+        values = self.value_function.get_value(state_primes)
         actions = [action for idx, action in enumerate(valid_actions) if values[idx] == np.max(values)]
         action = np.random.choice(actions)
         return action
+
+class ValueFunction():
+
+    def __init__(self, **userconfig):
+
+        self.config = {
+            "discount": 0.95,
+            "size": 0,
+            "height": 0,
+            "id": ""
+        }
+        self.config.update(userconfig)
+
+        self.size = self.config.get('size')
+        self.height = self.config.get('height')
+        self.id = self.config.get('id')
+
+        self.model = self.create_model();
+
+    def get_value(self, state):
+        return self.model.predict(state)
+
+    def create_model(self):
+
+        height = self.height
+        input_shape=(self.size, self.size, height)
+        inputs = Input(shape=input_shape)
+
+        layer = self.Fire_module(inputs, [height, height*2, height*2, height*2])
+        layer = SpatialDropout2D(0.2)(layer)
+        layer = self.Fire_module(layer, [height*2, height*3, height*3, height*3])
+        layer = SpatialDropout2D(0.2)(layer)
+
+        layer = Flatten()(layer)
+        layer = Dense(1)(layer)
+
+        model = Model(input=inputs,output=layer)
+
+        model.compile(loss='mse', optimizer='adam')
+        model.summary()
+
+        if os.path.isfile(self.id + '.h5'):
+            model.load_weights(self.id + '.h5')
+
+        return model
+
+    def Fire_module(self, input_layer,nb_kernel):
+        squeeze  = Convolution2D(nb_kernel[0], 1, 1, border_mode='same', activation='elu')(input_layer)
+        expand_1x1 = Convolution2D(nb_kernel[1], 1, 1, border_mode='same', activation='elu')(squeeze)
+        expand_2x2 = Convolution2D(nb_kernel[2], 2, 2, border_mode='same', activation='elu')(squeeze)
+        expend_3x3 = Convolution2D(nb_kernel[3], 3, 3, border_mode='same', activation='elu')(squeeze)
+        return merge([expand_1x1,expand_2x2, expend_3x3], mode='concat', concat_axis=1)
 
     def experience_replay(self, experiences, n_iter=1, batch_size=128, nb_epoch=1):
 

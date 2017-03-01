@@ -8,7 +8,7 @@ import gym
 
 import tak.env
 from tak.board import Board
-from tak.agent import RandomAgent, NFQAgent
+from tak.agent import RandomAgent, LearnerAgent, ValueFunction
 from tak.experience import Experience
 from peewee import fn
 
@@ -17,17 +17,10 @@ def main(args):
     mode = args.mode
     env = gym.make(args.env_id)
 
-    agent_white = NFQAgent(env=env, symbol=Board.WHITE, epsilon=args.epsilon)
-
-    if args.player == 'random':
-        agent_black = RandomAgent(env=env, symbol=Board.BLACK)
-    elif args.player == 'trained':
-        agent_black = NFQAgent(env=env, symbol=Board.BLACK)
-    elif args.player == 'human':
-        # todo
-        pass
-
     if mode == 'record':
+        agent_white = get_player(args.player1, Board.WHITE, env)
+        agent_black = get_player(args.player2, Board.BLACK, env)
+
         for i in range(int(args.iter)):
 
             if i % 20 == 0 and i > 0:
@@ -38,6 +31,9 @@ def main(args):
             q.execute()
 
     if mode == 'play':
+        agent_white = get_player(args.player1, symbol=Board.WHITE, env=env)
+        agent_black = get_player(args.player2, symbol=Board.BLACK, env=env)
+
         results = []
         for i in range(int(args.iter)):
 
@@ -59,14 +55,18 @@ def main(args):
 
         total, wins, losses, ties = sums
 
-        print('\nTotal Score:', total, 'Average Score:', mean[0])
+        print('\nAverage Score:', mean[0])
         print('Wins:', wins, 'Losses:', losses, 'Ties:', ties)
 
     if mode == 'train':
+        value_function = ValueFunction(size=env.board.size, height=env.board.height, id=env.spec.id)
+
         query = Experience.select() \
             .where(Experience.env_id == args.env_id) \
-            .order_by(fn.Rand()) \
-            .limit(args.limit)
+            .order_by(fn.Rand())
+
+        if args.limit:
+            query = query.limit(args.limit)
 
         experiences = pd.DataFrame([x for x in query.dicts()])
 
@@ -74,7 +74,13 @@ def main(args):
         experiences.loc[:, 'state'] = experiences['state'].apply(convert)
         experiences.loc[:, 'state_prime'] = experiences['state_prime'].apply(convert)
 
-        agent_white.experience_replay(experiences, n_iter=args.iter)
+        value_function.experience_replay(experiences, n_iter=args.iter)
+
+def get_player(player_type, symbol, env):
+    if player_type == 'trained':
+        return LearnerAgent(env=env, symbol=symbol)
+    return RandomAgent(env=env, symbol=symbol)
+
 
 def convert(state):
     if state:
@@ -140,13 +146,15 @@ if __name__ == '__main__':
 
     parser.add_argument('env_id', nargs='?', default='Tak3x3-points-v0')
     parser.add_argument('--mode', nargs='?', default='play', choices=['train', 'record', 'play'])
-    parser.add_argument('--player', nargs='?', default='random', choices=['random', 'human', 'trained'])
+
+    parser.add_argument('--player1', nargs='?', default='random', choices=['random', 'human', 'trained'])
+    parser.add_argument('--player2', nargs='?', default='random', choices=['random', 'human', 'trained'])
 
     parser.add_argument('--iter', dest='iter', type=int, default=0)
-    parser.add_argument('--limit', dest='limit', type=int, default=30000)
-
     parser.add_argument('--render', dest='render', action='store_true')
-    parser.add_argument('--log', dest='log', action='store_true')
+
+    # train parameters
+    parser.add_argument('--limit', dest='limit', type=int, default=100000)
     parser.add_argument('--epsilon', dest='epsilon', type=float, default=0.1)
 
     args = parser.parse_args()

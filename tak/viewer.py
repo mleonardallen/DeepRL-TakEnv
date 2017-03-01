@@ -7,7 +7,7 @@ import getch
 
 class Viewer():
 
-    def __init__(self, env, delay=0.3):
+    def __init__(self, env, delay=0.5):
 
         self.block_size = 150
         self.env = env
@@ -25,6 +25,8 @@ class Viewer():
             (self.board_size[0]) * self.block_size,
             (self.board_size[1]) * self.block_size
         )
+
+        self.width = self.block_size * self.board_size[0]
 
         self.bg_color = self.colors['white']
         self.pygame = None
@@ -67,10 +69,9 @@ class Viewer():
             }
         }
 
-
         self.screen = self.pygame.display.set_mode(self.size)
         self.font = self.pygame.font.Font(None, 64)
-        self.font_small = self.pygame.font.Font(None, 32)
+        self.font_small = self.pygame.font.SysFont("monospace", 24)
 
     def render(self, state):
 
@@ -86,10 +87,10 @@ class Viewer():
         black = self.env.board.available_pieces.get(Board.BLACK)
         white = self.env.board.available_pieces.get(Board.WHITE)
 
-        white_label = self.font_small.render('White: ' + str(white.get('pieces')), 1, (0,0,255))
-        self.screen.blit(white_label, (348, 5))
-        black_label = self.font_small.render('Black: ' + str(black.get('pieces')), 1, (0,0,255))
-        self.screen.blit(black_label, (350, 25))
+        white_label = self.font_small.render('White:' + str(white.get('pieces')), 1, (0,0,255))
+        self.screen.blit(white_label, (self.width - 120, 2))
+        black_label = self.font_small.render('Black:' + str(black.get('pieces')), 1, (0,0,255))
+        self.screen.blit(black_label, (self.width - 120, 24))
 
         if self.env.done:
             reward = self.env.reward * self.env.turn
@@ -101,7 +102,7 @@ class Viewer():
                 text = 'Tie'
 
             label = self.font.render(text, 1, (255,0,0))
-            self.screen.blit(label, (0, 0))
+            self.screen.blit(label, (2, 2))
 
         self.pygame.display.flip()
         if self.env.done:
@@ -109,8 +110,6 @@ class Viewer():
             getch.getche()
         else:
             time.sleep(self.delay)
-        
-
 
     def stone(self, value, position, height):
 
