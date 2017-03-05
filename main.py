@@ -59,7 +59,7 @@ def main(args):
         print('Wins:', wins, 'Losses:', losses, 'Ties:', ties)
 
     if mode == 'train':
-        value_function = ValueFunction(size=env.board.size, height=env.board.height, id=env.spec.id)
+        print('Loading Training Data..')
 
         query = Experience.select() \
             .where(Experience.env_id == args.env_id) \
@@ -74,6 +74,7 @@ def main(args):
         experiences.loc[:, 'state'] = experiences['state'].apply(convert)
         experiences.loc[:, 'state_prime'] = experiences['state_prime'].apply(convert)
 
+        value_function = ValueFunction(size=env.board.size, height=env.board.height, id=env.spec.id)
         value_function.experience_replay(experiences, n_iter=args.iter)
 
 def get_player(player_type, symbol, env):
@@ -150,12 +151,12 @@ if __name__ == '__main__':
     parser.add_argument('--player1', nargs='?', default='random', choices=['random', 'human', 'trained'])
     parser.add_argument('--player2', nargs='?', default='random', choices=['random', 'human', 'trained'])
 
-    parser.add_argument('--iter', dest='iter', type=int, default=0)
+    parser.add_argument('--iter', dest='iter', type=int, default=1)
     parser.add_argument('--render', dest='render', action='store_true')
+    parser.add_argument('--epsilon', dest='epsilon', type=float, default=0.1)
 
     # train parameters
     parser.add_argument('--limit', dest='limit', type=int, default=100000)
-    parser.add_argument('--epsilon', dest='epsilon', type=float, default=0.1)
 
     args = parser.parse_args()
     main(args)

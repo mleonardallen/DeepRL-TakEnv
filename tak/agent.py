@@ -10,7 +10,7 @@ from keras.models import Sequential, Model
 from keras.layers.pooling import MaxPooling2D, AveragePooling2D
 from keras.regularizers import l2
 
-# from keras.layers.normalization import BatchNormalization
+from keras.layers.normalization import BatchNormalization
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 class Agent(object):
@@ -112,12 +112,19 @@ class ValueFunction():
         input_shape=(self.size, self.size, height)
         inputs = Input(shape=input_shape)
 
-        layer = self.Fire_module(inputs, [height, height*2, height*2, height*2])
-        layer = SpatialDropout2D(0.2)(layer)
+        layer = BatchNormalization()(inputs)
+        layer = self.Fire_module(layer, [height, height*2, height*2, height*2])
+        layer = SpatialDropout2D(0.3)(layer)
+
+        layer = BatchNormalization()(layer)
         layer = self.Fire_module(layer, [height*2, height*3, height*3, height*3])
-        layer = SpatialDropout2D(0.2)(layer)
+        layer = SpatialDropout2D(0.3)(layer)
 
         layer = Flatten()(layer)
+        layer = Dense(100, activation='elu')(layer)
+        layer = Dropout(0.3)(layer)
+        layer = Dense(50, activation='elu')(layer)
+        layer = Dropout(0.3)(layer)
         layer = Dense(1)(layer)
 
         model = Model(input=inputs,output=layer)
@@ -137,7 +144,7 @@ class ValueFunction():
         expend_3x3 = Convolution2D(nb_kernel[3], 3, 3, border_mode='same', activation='elu')(squeeze)
         return merge([expand_1x1,expand_2x2, expend_3x3], mode='concat', concat_axis=1)
 
-    def experience_replay(self, experiences, n_iter=1, batch_size=128, nb_epoch=1):
+    def experience_replay(self, experiences, n_iter=1, batch_size=1024, nb_epoch=1):
 
         for j in range(n_iter):
             print("\nIteration:", j + 1)
