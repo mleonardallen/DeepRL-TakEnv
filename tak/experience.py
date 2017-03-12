@@ -24,3 +24,4 @@ class Experience(Model):
         database = db
 
 db.connect()
+# Experience.create_table()

@@ -12,14 +12,17 @@ from tak.agent import RandomAgent, LearnerAgent, ValueFunction
 from tak.experience import Experience
 from peewee import fn
 
+import time
+
 def main(args):
 
     mode = args.mode
     env = gym.make(args.env_id)
+    value_function = ValueFunction(size=env.board.size, height=env.board.height, id=env.spec.id)
 
     if mode == 'record':
-        agent_white = get_player(args.player1, Board.WHITE, env)
-        agent_black = get_player(args.player2, Board.BLACK, env)
+        agent_white = get_player(args.player1, symbol=Board.WHITE, env=env, value_function=value_function)
+        agent_black = get_player(args.player2, symbol=Board.BLACK, env=env, value_function=value_function)
 
         for i in range(int(args.iter)):
 
@@ -31,8 +34,8 @@ def main(args):
             q.execute()
 
     if mode == 'play':
-        agent_white = get_player(args.player1, symbol=Board.WHITE, env=env)
-        agent_black = get_player(args.player2, symbol=Board.BLACK, env=env)
+        agent_white = get_player(args.player1, symbol=Board.WHITE, env=env, value_function=value_function)
+        agent_black = get_player(args.player2, symbol=Board.BLACK, env=env, value_function=value_function)
 
         results = []
         for i in range(int(args.iter)):
@@ -60,6 +63,7 @@ def main(args):
 
     if mode == 'train':
         print('Loading Training Data..')
+        start = time.time()
 
         query = Experience.select() \
             .where(Experience.env_id == args.env_id) \
@@ -74,8 +78,10 @@ def main(args):
         experiences.loc[:, 'state'] = experiences['state'].apply(convert)
         experiences.loc[:, 'state_prime'] = experiences['state_prime'].apply(convert)
 
-        value_function = ValueFunction(size=env.board.size, height=env.board.height, id=env.spec.id)
-        value_function.experience_replay(experiences, n_iter=args.iter)
+        end = time.time()
+        print("time:", end-start)
+
+        value_function.experience_replay(experiences, n_iter=args.iter, batch_size=args.batch_size)
 
 def get_player(player_type, symbol, env):
     if player_type == 'trained':
@@ -154,9 +160,10 @@ if __name__ == '__main__':
     parser.add_argument('--iter', dest='iter', type=int, default=1)
     parser.add_argument('--render', dest='render', action='store_true')
     parser.add_argument('--epsilon', dest='epsilon', type=float, default=0.1)
+    parser.add_argument('--batch_size', dest='batch_size', type=int, default=64512)
 
     # train parameters
-    parser.add_argument('--limit', dest='limit', type=int, default=100000)
+    parser.add_argument('--limit', dest='limit', type=int, default=1000000)
 
     args = parser.parse_args()
     main(args)
