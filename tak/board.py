@@ -45,6 +45,7 @@ class Board():
         self.available_pieces = {}
         self.available_pieces[Board.WHITE] = {'pieces': self.pieces, 'capstones': self.capstones}
         self.available_pieces[Board.BLACK] = {'pieces': self.pieces, 'capstones': self.capstones}
+        self.adjacent_dict = {}
 
         self.sides = self.get_sides()
 
@@ -197,8 +198,14 @@ class Board():
     def is_adjacent(self, space1, space2):
         """ Returns {boolean} if two spaces are adjacent """
         # a space is adjacent if the total distance away is one
+        if (space1, space2) in self.adjacent_dict:
+            return self.adjacent_dict.get((space1, space2))
+
         diff = np.sum(np.absolute(np.array(space1) - np.array(space2)))
-        return diff == 1
+        result = diff == 1
+        self.adjacent_dict[(space1, space2)] = result
+
+        return result
 
     def add_layer(self):
         self.state = np.append(
