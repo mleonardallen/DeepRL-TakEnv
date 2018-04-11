@@ -40,11 +40,17 @@ class Board():
 
     def reset(self):
         self.state = np.zeros((self.size, self.size, self.height))
+        self.set_height_variables()
+        self.top_layer = self.get_top_layer()
         self.available_pieces = {}
         self.available_pieces[Board.WHITE] = {'pieces': self.pieces, 'capstones': self.capstones}
         self.available_pieces[Board.BLACK] = {'pieces': self.pieces, 'capstones': self.capstones}
 
         self.sides = self.get_sides()
+
+    def set_height_variables(self):
+        height = self.state.shape[-1]
+        self.height_range = range(height)
 
     def act(self, action, player):
         """ player takes an action """
@@ -65,6 +71,8 @@ class Board():
             available['capstones'] -= 1
         else:
             available['pieces'] -= 1
+
+        self.top_layer = self.get_top_layer()
 
     def move(self, action):
         """ move action """
@@ -91,11 +99,13 @@ class Board():
 
             self.state[place_to][to_top + idx] = value
 
+        self.top_layer = self.get_top_layer()
+
     def get_owned_spaces(self, player, stones_types = None):
         """Return spaces owned by player
         array of tuples [(3, 2), ...]
         """
-        board = self.get_top_layer()
+        board = self.top_layer
 
         # determine which stones types to look for
         if stones_types is None:
@@ -111,7 +121,7 @@ class Board():
         return tuple((zip(*spaces)))
 
     def get_movement_spaces(self):
-        board = self.get_top_layer()
+        board = self.top_layer
         # todo valid movement pieces are filtered out later because of combinations,
         # todo simplify this.
         # available spaces to move
@@ -158,7 +168,7 @@ class Board():
         return pieces
 
     def get_open_spaces(self):
-        board = self.get_top_layer()
+        board = self.top_layer
         spaces = np.array(np.where(board == 0))
         return tuple((zip(*spaces)))
 
@@ -167,8 +177,8 @@ class Board():
 
     def get_top_layer(self):
         merged = []
-        height = self.state.shape[-1]
-        for idx in reversed(range(height)):
+
+        for idx in reversed(self.height_range):
             layer = copy.copy(self.state[:, :, idx])
             if len(merged):
                 layer[merged != 0] = merged[merged != 0]
@@ -178,7 +188,7 @@ class Board():
         return merged
 
     def get_top_index(self, space):
-        for idx in range(len(self.state[space])):
+        for idx in self.height_range:
             if self.state[space][idx] == 0:
                 return idx
 
@@ -196,6 +206,8 @@ class Board():
             np.zeros((1, self.size, self.size)),
             axis=0
         )
+        self.top_layer = self.get_top_layer()
+        self.set_height_variables()
 
     def get_available_pieces(self, player):
         """ Returns {dict} available pieces for player
