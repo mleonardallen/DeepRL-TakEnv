@@ -86,7 +86,11 @@ class ActionSpace():
 
             pieces = self.env.board.get_pieces_at_space(space_from, i.get('carry'))
             can_move = self.env.board.can_move(space_from, space_to, pieces)
-            can_move_next = self.env.board.can_move(space_to, next_space, pieces[-1:])
+
+            # only check if can move again if first move succeeded
+            can_move_next = False
+            if can_move:
+                can_move_next = self.env.board.can_move(space_to, next_space, pieces[-1:])
 
             if not can_move:
                 continue
