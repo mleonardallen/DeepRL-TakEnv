@@ -83,10 +83,10 @@ def main(args):
 
         value_function.experience_replay(experiences, n_iter=args.iter, batch_size=args.batch_size)
 
-def get_player(player_type, symbol, env):
+def get_player(player_type, symbol, env, value_function):
     if player_type == 'trained':
-        return LearnerAgent(env=env, symbol=symbol)
-    return RandomAgent(env=env, symbol=symbol)
+        return LearnerAgent(env=env, symbol=symbol, value_function=value_function)
+    return RandomAgent(env=env, symbol=symbol, value_function=value_function)
 
 
 def convert(state):

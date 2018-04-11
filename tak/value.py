@@ -1,5 +1,5 @@
 from keras.layers.core import Dense, Flatten, SpatialDropout2D, Dropout
-from keras.layers import Input, Convolution2D, merge
+from keras.layers import Input, Conv2D, concatenate
 from keras.models import Sequential, Model
 
 from keras.optimizers import SGD, Adam
@@ -60,14 +60,14 @@ class ValueFunction():
         layer = SpatialDropout2D(0.3)(layer)
 
         layer = Flatten()(layer)
-        layer = Dense(100, activation='elu', W_regularizer=l2(self.weight_decay))(layer)
+        layer = Dense(100, activation='elu', kernel_regularizer=l2(self.weight_decay))(layer)
         layer = Dropout(0.3)(layer)
-        layer = Dense(50, activation='elu', W_regularizer=l2(self.weight_decay))(layer)
+        layer = Dense(50, activation='elu', kernel_regularizer=l2(self.weight_decay))(layer)
         layer = Dropout(0.3)(layer)
 
         layer = Dense(1)(layer)
 
-        model = Model(input=inputs,output=layer)
+        model = Model(inputs=inputs,outputs=layer)
 
         model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
         model.summary()
@@ -78,11 +78,11 @@ class ValueFunction():
         return model
 
     def Fire_module(self, input_layer,nb_kernel):
-        squeeze  = Convolution2D(nb_kernel[0], 1, 1, border_mode='same', activation='elu', W_regularizer=l2(self.weight_decay))(input_layer)
-        expand_1x1 = Convolution2D(nb_kernel[1], 1, 1, border_mode='same', activation='elu', W_regularizer=l2(self.weight_decay))(squeeze)
-        expand_2x2 = Convolution2D(nb_kernel[2], 2, 2, border_mode='same', activation='elu', W_regularizer=l2(self.weight_decay))(squeeze)
+        squeeze  = Conv2D(nb_kernel[0], (1, 1), padding='same', activation='elu', kernel_regularizer=l2(self.weight_decay))(input_layer)
+        expand_1x1 = Conv2D(nb_kernel[1], (1, 1), padding='same', activation='elu', kernel_regularizer=l2(self.weight_decay))(squeeze)
+        expand_2x2 = Conv2D(nb_kernel[2], (2, 2), padding='same', activation='elu', kernel_regularizer=l2(self.weight_decay))(squeeze)
         # expend_3x3 = Convolution2D(nb_kernel[3], 3, 3, border_mode='same', activation='elu')(squeeze)
-        return merge([expand_1x1,expand_2x2], mode='concat', concat_axis=1)
+        return concatenate([expand_1x1,expand_2x2], axis=1)
 
     def experience_replay(self, experiences, n_iter=1, batch_size=64512, nb_epoch=1):
 
