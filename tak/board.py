@@ -42,10 +42,15 @@ class Board():
         self.state = np.zeros((self.size, self.size, self.height))
         self.set_height_variables()
         self.top_layer = self.get_top_layer()
+        self.top_layer_ravel = self.top_layer.ravel()
         self.available_pieces = {}
         self.available_pieces[Board.WHITE] = {'pieces': self.pieces, 'capstones': self.capstones}
         self.available_pieces[Board.BLACK] = {'pieces': self.pieces, 'capstones': self.capstones}
-        self.adjacent_dict = {}
+
+        # cache dictionaries things that are computed a lot
+        self.is_adjacent_dict = {}
+        self.top_index_dict = {}
+        self.pieces_at_space_dict = {}
 
         self.sides = self.get_sides()
 
@@ -73,7 +78,10 @@ class Board():
         else:
             available['pieces'] -= 1
 
+        self.top_index_dict.pop(space, None)
+        self.pieces_at_space_dict.pop(space, None)
         self.top_layer = self.get_top_layer()
+        self.top_layer_ravel = self.top_layer.ravel()
 
     def move(self, action):
         """ move action """
@@ -100,13 +108,17 @@ class Board():
 
             self.state[place_to][to_top + idx] = value
 
+        self.top_index_dict.pop(place_from, None)
+        self.top_index_dict.pop(place_to, None)
+        self.pieces_at_space_dict.pop(place_from, None)
+        self.pieces_at_space_dict.pop(place_to, None)
         self.top_layer = self.get_top_layer()
+        self.top_layer_ravel = self.top_layer.ravel()
 
     def get_owned_spaces(self, player, stones_types = None):
         """Return spaces owned by player
         array of tuples [(3, 2), ...]
         """
-        board = self.top_layer
 
         # determine which stones types to look for
         if stones_types is None:
@@ -115,18 +127,14 @@ class Board():
         stones_types = np.array(stones_types)
         stones_types *= player
 
-        # get matching indexes
-        ix = np.in1d(board.ravel(), stones_types).reshape(board.shape)
-
-        spaces = np.array(np.where(ix))
-        return tuple((zip(*spaces)))
+        return self.get_spaces(stones_types)
 
     def get_movement_spaces(self):
         board = self.top_layer
         # todo valid movement pieces are filtered out later because of combinations,
         # todo simplify this.
         # available spaces to move
-        stones = [
+        stones_types = [
             Stone.EMPTY.value, 
             Stone.FLAT.value,
             -Stone.FLAT.value,
@@ -134,9 +142,7 @@ class Board():
             -Stone.STANDING.value
         ]
 
-        ix = np.in1d(board.ravel(), stones).reshape(board.shape)
-        spaces = np.array(np.where(ix))
-        return tuple((zip(*spaces)))
+        return self.get_spaces(stones_types)
 
     def can_move(self, space_from, space_to, pieces = []):
 
@@ -155,6 +161,11 @@ class Board():
         return result
 
     def get_pieces_at_space(self, space, num_pieces):
+        if space in self.pieces_at_space_dict:
+            pieces = self.pieces_at_space_dict[space].get(num_pieces, None)
+            if pieces:
+                return pieces
+
         idx = self.get_top_index(space)
         if idx == 0:
             return [Stone.EMPTY]
@@ -166,7 +177,30 @@ class Board():
             to_value = np.absolute(to_value)
             pieces.insert(0, Stone(to_value))
 
+        if space not in self.pieces_at_space_dict:
+            self.pieces_at_space_dict[space] = {}
+        self.pieces_at_space_dict[space][num_pieces] = pieces
+
         return pieces
+
+    def get_spaces(self, stones_types):
+        """
+        get matching indexes
+        """
+
+        """
+        [[False True False
+         [True False False]
+         [False False False]]
+        """
+        ix = np.in1d(self.top_layer_ravel, stones_types).reshape((self.size, self.size))
+
+        """
+        Example result
+        ((0,1), (1,0))
+        """
+        spaces = np.where(ix)
+        return tuple((zip(*spaces)))
 
     def get_open_spaces(self):
         board = self.top_layer
@@ -189,8 +223,12 @@ class Board():
         return merged
 
     def get_top_index(self, space):
+        if space in self.top_index_dict:
+            return self.top_index_dict[space]
+
         for idx in self.height_range:
             if self.state[space][idx] == 0:
+                self.top_index_dict[space] = idx
                 return idx
 
         return len(self.state)
@@ -198,12 +236,12 @@ class Board():
     def is_adjacent(self, space1, space2):
         """ Returns {boolean} if two spaces are adjacent """
         # a space is adjacent if the total distance away is one
-        if (space1, space2) in self.adjacent_dict:
-            return self.adjacent_dict.get((space1, space2))
+        if (space1, space2) in self.is_adjacent_dict:
+            return self.is_adjacent_dict.get((space1, space2))
 
         diff = np.sum(np.absolute(np.array(space1) - np.array(space2)))
         result = diff == 1
-        self.adjacent_dict[(space1, space2)] = result
+        self.is_adjacent_dict[(space1, space2)] = result
 
         return result
 
@@ -214,6 +252,7 @@ class Board():
             axis=0
         )
         self.top_layer = self.get_top_layer()
+        self.top_layer_ravel = self.top_layer.ravel()
         self.set_height_variables()
 
     def get_available_pieces(self, player):
@@ -284,7 +323,7 @@ class Board():
         """
 
         # create node graph so we can check if sides are connceted
-        G = nx.from_numpy_matrix(self.adjaceny_matrix(player))
+        G = nx.from_numpy_matrix(self.adjacency_matrix(player))
 
         # check if North/South sides are connected
         for pos_north in self.sides.get('north'):
@@ -300,7 +339,7 @@ class Board():
 
         return False
 
-    def adjaceny_matrix(self , player):
+    def adjacency_matrix(self , player):
         """ adjacency matrix indicates what nodes are connected """
 
         adjacency = np.zeros((self.size**2, self.size**2))

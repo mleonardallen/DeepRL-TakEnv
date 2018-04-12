@@ -84,19 +84,20 @@ class ActionSpace():
 
         for i in combinations:
 
+            # if terminal move and only carrying 1 piece, then the move is not valid
+            if not i.get('terminal') and i.get('carry') == 1:
+                continue
+
             pieces = self.env.board.get_pieces_at_space(space_from, i.get('carry'))
             can_move = self.env.board.can_move(space_from, space_to, pieces)
 
-            # only check if can move again if first move succeeded
-            can_move_next = False
-            if can_move:
-                can_move_next = self.env.board.can_move(space_to, next_space, pieces[-1:])
-
+            # cannot move here, not valid
             if not can_move:
                 continue
-            elif not i.get('terminal') and i.get('carry') == 1:
-                continue
-            elif not i.get('terminal') and not can_move_next:
+
+            # if not terminal and next move is invalid then combination not valid
+            can_move_next = self.env.board.can_move(space_to, next_space, pieces[-1:])
+            if not i.get('terminal') and not can_move_next:
                 continue
 
             keep.append(i)
