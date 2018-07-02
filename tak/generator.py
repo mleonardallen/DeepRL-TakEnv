@@ -1,4 +1,6 @@
-from keras.preprocessing.image import ImageDataGenerator, Iterator, flip_axis
+from keras.preprocessing.image import ImageDataGenerator, Iterator
+from tensorflow.python.keras._impl.keras import backend as K
+
 import numpy as np
 
 class StateGenerator(ImageDataGenerator):
@@ -18,8 +20,8 @@ class StateIterator(Iterator):
         batch_size: int, minibatch size. (default 32)
         shuffle: Boolean, shuffle with each epoch
         seed: random seed.
-        flip_prob: float ∈[0,1] probability of horizontally flipping generated state
-        rotate_prob: float ∈[0,1] probability of rotating generated state
+        flip_prob: float Set[0,1] probability of horizontally flipping generated state
+        rotate_prob: float Set[0,1] probability of rotating generated state
     '''
 
     def __init__(self, X, y, batch_size=32, shuffle=False, seed=None, flip_prob=0, rotate_prob=0):
@@ -31,17 +33,11 @@ class StateIterator(Iterator):
 
         super(StateIterator, self).__init__(X.shape[0], batch_size, shuffle, seed)
 
-    def next(self):
-
-        # for python 2.x.
-        # Keeps under lock only the mechanism which advances
-        # the indexing of each batch
-        # see http://anandology.com/blog/using-iterators-and-generators/
-        with self.lock:
-            index_array, current_index, current_batch_size = next(self.index_generator)
+    def _get_batches_of_transformed_samples(self, index_array):
 
         # The generation of data is not under thread lock so it can be done in parallel
-        batch_x = np.zeros(tuple([current_batch_size] + list(self.X[0].shape)))
+        batch_x = np.zeros(tuple([len(index_array)] + list(self.X.shape)[1:]), dtype=K.floatx())
+
         for batch_idx, source_idx in enumerate(index_array):
             batch_x[batch_idx] = self.augment(self.X[source_idx])
             
@@ -58,6 +54,15 @@ class StateIterator(Iterator):
 
         # random horizontal flip
         if np.random.choice([True, False], p=[self.flip_prob, 1.-self.flip_prob]):
-            x = flip_axis(x, 1)
+            x = self.flip_axis(x, 1)
 
         return x
+
+    def flip_axis(self, x, axis):
+        x = np.asarray(x).swapaxes(axis, 0)
+        x = x[::-1, ...]
+        x = x.swapaxes(0, axis)
+        return x
+
+    def on_epoch_end(self):
+        pass

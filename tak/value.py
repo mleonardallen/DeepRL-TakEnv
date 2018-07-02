@@ -12,6 +12,7 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 from tak.generator import StateGenerator
 
+import math
 import time
 import os.path
 import numpy as np
@@ -142,9 +143,9 @@ class ValueFunction():
             # minimax - good reward for player prime is bad reward for player
             rewards = np.multiply(rewards, players)
 
-            # Q(s,a) <- r + γ * max_a' Q(s',a')
-            γ = self.config["discount"]
-            y_train = np.add(rewards, γ * q_primes)
+            # Q(s,a) <- r + discount * max_a' Q(s',a')
+            discount = self.config["discount"]
+            y_train = np.add(rewards, discount * q_primes)
 
             end = time.time()
             print("time:", end-start)
@@ -157,8 +158,8 @@ class ValueFunction():
             datagen = StateGenerator()
             self.model.fit_generator(
                 datagen.flow(X_train, y_train, batch_size=batch_size, flip_prob=0.5, rotate_prob=0.5),
-                samples_per_epoch=len(y_train),
-                nb_epoch=nb_epoch
+                steps_per_epoch=math.floor(len(y_train)/batch_size),
+                epochs=nb_epoch
             )
 
         self.save()

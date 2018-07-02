@@ -57,8 +57,8 @@ class LearnerAgent(Agent):
     def act(self, state):
 
         # exploration
-        ɛ = self.config["epsilon"]
-        explore = np.random.choice([False, True], p = [1-ɛ, ɛ])
+        epsilon = self.config["epsilon"]
+        explore = np.random.choice([False, True], p = [1-epsilon, epsilon])
 
         valid_actions = self.env.action_space.get_valid_moves()
         if explore:

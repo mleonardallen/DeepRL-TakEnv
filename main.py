@@ -9,10 +9,6 @@ import gym
 import tak.env
 from tak.board import Board
 from tak.agent import RandomAgent, LearnerAgent, ValueFunction
-from tak.experience import Experience
-from peewee import fn
-
-import time
 
 def main(args):
 
@@ -20,25 +16,33 @@ def main(args):
     env = gym.make(args.env_id)
     value_function = ValueFunction(size=env.board.size, height=env.board.height, id=env.spec.id)
 
-    if mode == 'record':
+    if mode == 'train':
+
         agent_white = get_player(args.player1, symbol=Board.WHITE, env=env, value_function=value_function)
         agent_black = get_player(args.player2, symbol=Board.BLACK, env=env, value_function=value_function)
+        all_experiences = []
 
-        for i in range(int(args.iter)):
+        for i in range(int(args.games)):
 
             if i % 20 == 0 and i > 0:
                 print('Episode', i)
 
             loop_experiences = agent_environment_loop(env, agent_white, agent_black, render=False)
-            q = Experience.insert_many(loop_experiences)
-            q.execute()
+            all_experiences += loop_experiences
+
+        experiences = pd.DataFrame(all_experiences)
+        experiences.fillna(False, inplace=True)
+        experiences.loc[:, 'state'] = experiences['state'].apply(convert)
+        experiences.loc[:, 'state_prime'] = experiences['state_prime'].apply(convert)
+
+        value_function.experience_replay(experiences, n_iter=args.iter, batch_size=args.batch_size)
 
     if mode == 'play':
         agent_white = get_player(args.player1, symbol=Board.WHITE, env=env, value_function=value_function)
         agent_black = get_player(args.player2, symbol=Board.BLACK, env=env, value_function=value_function)
 
         results = []
-        for i in range(int(args.iter)):
+        for i in range(int(args.games)):
 
             if i % 20 == 0 and i > 0:
                 print('Episode', i)
@@ -60,28 +64,6 @@ def main(args):
 
         print('\nAverage Score:', mean[0])
         print('Wins:', wins, 'Losses:', losses, 'Ties:', ties)
-
-    if mode == 'train':
-        print('Loading Training Data..')
-        start = time.time()
-
-        query = Experience.select() \
-            .where(Experience.env_id == args.env_id) \
-            .order_by(fn.Rand())
-
-        if args.limit:
-            query = query.limit(args.limit)
-
-        experiences = pd.DataFrame([x for x in query.dicts()])
-
-        experiences.fillna(False, inplace=True)
-        experiences.loc[:, 'state'] = experiences['state'].apply(convert)
-        experiences.loc[:, 'state_prime'] = experiences['state_prime'].apply(convert)
-
-        end = time.time()
-        print("time:", end-start)
-
-        value_function.experience_replay(experiences, n_iter=args.iter, batch_size=args.batch_size)
 
 def get_player(player_type, symbol, env, value_function):
     if player_type == 'trained':
@@ -152,15 +134,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
 
     parser.add_argument('env_id', nargs='?', default='Tak3x3-points-v0')
-    parser.add_argument('--mode', nargs='?', default='play', choices=['train', 'record', 'play'])
+    parser.add_argument('--mode', nargs='?', default='play', choices=['train', 'play'])
 
     parser.add_argument('--player1', nargs='?', default='random', choices=['random', 'human', 'trained'])
     parser.add_argument('--player2', nargs='?', default='random', choices=['random', 'human', 'trained'])
 
     parser.add_argument('--iter', dest='iter', type=int, default=1)
+    parser.add_argument('--games', dest='games', type=int, default=1)
     parser.add_argument('--render', dest='render', action='store_true')
     parser.add_argument('--epsilon', dest='epsilon', type=float, default=0.1)
-    parser.add_argument('--batch_size', dest='batch_size', type=int, default=64512)
+    parser.add_argument('--batch_size', dest='batch_size', type=int, default=100)
 
     # train parameters
     parser.add_argument('--limit', dest='limit', type=int, default=1000000)

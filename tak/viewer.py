@@ -3,7 +3,7 @@ import time
 from tak.stone import Stone
 from tak.board import Board
 import os
-import getch
+import sys
 
 class Viewer():
 
@@ -106,8 +106,10 @@ class Viewer():
 
         self.pygame.display.flip()
         if self.env.done:
-            print("Press any key to continue...")
-            getch.getche()
+            if sys.version_info >= (3, 0):
+                input("Press any key to continue...")
+            else:
+                raw_input("Press any key to continue...")
         else:
             time.sleep(self.delay)
 

@@ -36,6 +36,9 @@ class TakEnv(gym.Env):
         self.viewer = Viewer(env=self)
         self._reset()
 
+    def _seed(self):
+        pass
+
     def _reset(self):
         self.done = False
         self.turn = 1
