@@ -11,7 +11,9 @@ setup(
   packages=['tak_env'],
   install_requires=[
     'gym',
-    'pygame'
+    'pygame',
+    'numpy',
+    'networkx==2.1'
   ],
   zip_safe=False,
   include_package_data=True
