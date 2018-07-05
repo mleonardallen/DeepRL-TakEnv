@@ -112,7 +112,7 @@ def agent_environment_loop(env, agent_white, agent_black, render=False):
         reward = reward_prime
 
         if render:
-            env.render()
+            env.render(mode='human')
 
         if done:
             break

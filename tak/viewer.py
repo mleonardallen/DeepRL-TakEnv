@@ -107,9 +107,9 @@ class Viewer():
         self.pygame.display.flip()
         if self.env.done:
             if sys.version_info >= (3, 0):
-                input("Press any key to continue...")
+                input("Press Enter key to continue...")
             else:
-                raw_input("Press any key to continue...")
+                raw_input("Press Enter key to continue...")
         else:
             time.sleep(self.delay)
 
