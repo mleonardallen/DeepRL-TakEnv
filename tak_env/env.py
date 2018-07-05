@@ -3,9 +3,9 @@ Tak - A Beautiful Game
 """
 import gym
 import numpy as np
-from tak.space import ActionSpace
-from tak.board import Board
-from tak.viewer import Viewer
+from tak_env.space import ActionSpace
+from tak_env.board import Board
+from tak_env.viewer import Viewer
 import copy
 
 class TakEnv(gym.Env):

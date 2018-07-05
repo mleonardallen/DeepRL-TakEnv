@@ -1,5 +1,5 @@
 import numpy as np
-from tak.stone import Stone
+from tak_env.stone import Stone
 import networkx as nx
 import copy
 
@@ -13,7 +13,7 @@ class Board():
 
     register(
         id='Tak3x3-points-v0',
-        entry_point='tak.env:TakEnv',
+        entry_point='tak_env.env:TakEnv',
         timestep_limit=200,
         kwargs={
             'board_size': 3,

@@ -1,7 +1,7 @@
 
 import numpy as np
 import itertools as it
-from tak.stone import Stone
+from tak_env.stone import Stone
 
 class ActionSpace():
 

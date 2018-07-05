@@ -1,7 +1,7 @@
 import importlib
 import time
-from tak.stone import Stone
-from tak.board import Board
+from tak_env.stone import Stone
+from tak_env.board import Board
 import os
 import sys
 
