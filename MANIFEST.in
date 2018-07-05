@@ -1,1 +1,1 @@
-include tak_env/images
+include tak_env/images/*.png
