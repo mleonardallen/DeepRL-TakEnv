@@ -38,22 +38,22 @@ class Viewer():
         self.pygame = importlib.import_module('pygame')
         self.pygame.init()
 
-        white_flat = self.pygame.image.load('images/white.png')
+        white_flat = self.pygame.image.load(__file__ + 'images/white.png')
         size = white_flat.get_size()
         size = (int(size[0] / 4), int(size[1] / 4))
         white_flat = self.pygame.transform.scale(white_flat, size)
 
-        black_flat = self.pygame.image.load('images/black.png')
+        black_flat = self.pygame.image.load(__file__ + 'images/black.png')
         size = black_flat.get_size()
         size = (int(size[0] / 4), int(size[1] / 4))
         black_flat = self.pygame.transform.scale(black_flat, size)
 
-        white_standing = self.pygame.image.load('images/white_standing.png')
+        white_standing = self.pygame.image.load(__file__ +'images/white_standing.png')
         size = white_standing.get_size()
         size = (int(size[0] / 4), int(size[1] / 4))
         white_standing = self.pygame.transform.scale(white_standing, size)
 
-        black_standing = self.pygame.image.load('images/black_standing.png')
+        black_standing = self.pygame.image.load(__file__ + 'images/black_standing.png')
         size = black_standing.get_size()
         size = (int(size[0] / 4), int(size[1] / 4))
         black_standing = self.pygame.transform.scale(black_standing, size)
