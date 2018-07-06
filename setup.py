@@ -7,7 +7,7 @@ setup(
   url='https://github.com/mleonardallen/tak_env',
   author='Mike Allen',
   author_email='mikeleonardallen@gmail.com',
-  license='MIT',
+  license='GPL',
   packages=['tak_env'],
   install_requires=[
     'gym',

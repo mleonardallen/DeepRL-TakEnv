@@ -41,7 +41,7 @@ class TakEnv(gym.Env):
 
     def _reset(self):
         self.done = False
-        self.turn = 1
+        self.turn = np.random.choice([1, -1])
         self.reward = 0
         self.board.reset()
         # multipart moves keep track of previous action
@@ -82,7 +82,7 @@ class TakEnv(gym.Env):
             self.continued_action = action
 
         # game still going
-        return self._feedback(action, reward=0, done = False)
+        return self._feedback(action, reward=0, done=False)
 
     def _feedback(self, action, reward, done):
         state = self._state()
@@ -90,11 +90,7 @@ class TakEnv(gym.Env):
         self.done = done
         self.reward = reward
 
-        return state, reward, self.done, {
-            'black': self.board.get_available_pieces(Board.BLACK),
-            'white': self.board.get_available_pieces(Board.WHITE),
-            'turn': self.turn
-        }
+        return state, reward, self.done
 
     def _render(self, mode='human', close=False):
         if close:
