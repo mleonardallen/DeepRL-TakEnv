@@ -34,12 +34,12 @@ class TakEnv(gym.Env):
         self.scoring = scoring
 
         self.viewer = Viewer(env=self)
-        self._reset()
+        self.reset()
 
-    def _seed(self):
+    def seed(self):
         pass
 
-    def _reset(self):
+    def reset(self):
         self.done = False
         self.turn = np.random.choice([1, -1])
         self.reward = 0
@@ -49,21 +49,18 @@ class TakEnv(gym.Env):
 
         return self._state()
 
-    def _state(self):
-        return self.board.state
-
-    def _step(self, action):
+    def step(self, action):
 
         if self.done:
-            return self._feedback(action, reward=0, done=True)
+            return self.__feedback(action, reward=0, done=True)
 
         board = self.board
         board.act(action, self.turn)
 
         # game ends when road is connected
         if board.is_road_connected(self.turn):
-            score = self.get_score(self.turn)
-            return self._feedback(action, reward=score, done=True)
+            score = self.__get_score(self.turn)
+            return self.__feedback(action, reward=score, done=True)
 
         # game ends if no open spaces or if any player runs out of pieces
         if (
@@ -71,8 +68,8 @@ class TakEnv(gym.Env):
             (len(board.get_available_piece_types(self.turn)) == 0)
         ):
             winner = board.get_flat_winner()
-            score = self.get_score(winner)
-            return self._feedback(action, reward=score, done=True)
+            score = self.__get_score(winner)
+            return self.__feedback(action, reward=score, done=True)
 
         # update player turn
         if action.get('terminal'):
@@ -82,9 +79,18 @@ class TakEnv(gym.Env):
             self.continued_action = action
 
         # game still going
-        return self._feedback(action, reward=0, done=False)
+        return self.__feedback(action, reward=0, done=False)
 
-    def _feedback(self, action, reward, done):
+    def render(self, mode='human', close=False):
+        if close:
+            return
+        self.viewer.render(self.board.state)
+
+    def _state(self):
+        return self.board.state
+
+
+    def __feedback(self, action, reward, done):
         state = self._state()
 
         self.done = done
@@ -92,14 +98,7 @@ class TakEnv(gym.Env):
 
         return state, reward, self.done
 
-    def _render(self, mode='human', close=False):
-        if close:
-            return
-
-        self.viewer.render(self.board.state)
-
-
-    def get_score(self, winner):
+    def __get_score(self, winner):
         if self.scoring == 'wins':
             return 1 if self.turn == winner else -1
 
