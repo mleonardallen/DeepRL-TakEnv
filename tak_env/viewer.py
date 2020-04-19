@@ -1,7 +1,6 @@
 import importlib
 import time
-from tak_env.stone import Stone
-from tak_env.board import Board
+from tak_env.types import Stone, Player
 import os
 import sys
 
@@ -11,7 +10,7 @@ class Viewer():
 
         self.block_size = 150
         self.env = env
-        self.board_size = (self.env.board.size, self.env.board.size)
+        self.board_size = (self.env.board_size, self.env.board_size)
 
         self.colors = {
             'black': (0, 0, 0),
@@ -86,8 +85,8 @@ class Viewer():
                 for height, stone in enumerate(column):
                     self.stone(stone, (rowidx, colidx), height)
 
-        black = self.env.board.available_pieces.get(Board.BLACK)
-        white = self.env.board.available_pieces.get(Board.WHITE)
+        black = self.env.available_pieces.get(Player.BLACK.value)
+        white = self.env.available_pieces.get(Player.WHITE.value)
 
         white_label = self.font_small.render('White:' + str(white.get('pieces')), 1, (0,0,255))
         self.screen.blit(white_label, (self.width - 120, 2))

@@ -6,3 +6,7 @@ class Stone(Enum):
     STANDING = 2
     CAPITAL = 3
     EMPTY = 0
+
+class Player(Enum):
+    BLACK = -1
+    WHITE = 1

@@ -4,7 +4,8 @@ Tak - A Beautiful Game
 import gym
 import numpy as np
 from tak_env.space import ActionSpace
-from tak_env.board import Board
+import tak_env.board as Board
+from tak_env.types import Player
 from tak_env.viewer import Viewer
 import copy
 
@@ -29,45 +30,55 @@ class TakEnv(gym.Env):
         assert isinstance(capstones, int) and capstones >= 0 and capstones <= 2, 'Invalid number of capstones: {}'.format(capstones)
 
         # set board properties
-        self.board = Board(size=board_size, pieces=pieces, capstones=capstones, height=height)
+        self.board_size = board_size
+        self.height = height
+        self.capstones = capstones
+        self.pieces = pieces
+
         self.action_space = ActionSpace(env=self)
         self.scoring = scoring
-
         self.viewer = Viewer(env=self)
+
         self.reset()
 
     def seed(self):
         pass
 
     def reset(self):
+
         self.done = False
         self.turn = np.random.choice([1, -1])
         self.reward = 0
-        self.board.reset()
+        
+        self.available_pieces = {}
+        self.available_pieces[Player.WHITE.value] = {'pieces': self.pieces, 'capstones': self.capstones}
+        self.available_pieces[Player.BLACK.value] = {'pieces': self.pieces, 'capstones': self.capstones}
+
+        self.state = np.zeros((self.board_size, self.board_size, self.height))
+
         # multipart moves keep track of previous action
         self.continued_action = None
 
-        return self._state()
+        return self.state
 
     def step(self, action):
 
         if self.done:
             return self.__feedback(action, reward=0, done=True)
 
-        board = self.board
-        board.act(action, self.turn)
+        Board.act(self.state, action, self.available_pieces, self.turn)
 
         # game ends when road is connected
-        if board.is_road_connected(self.turn):
+        if Board.is_road_connected(self.state, self.turn):
             score = self.__get_score(self.turn)
             return self.__feedback(action, reward=score, done=True)
 
         # game ends if no open spaces or if any player runs out of pieces
         if (
-            (not board.has_open_spaces()) or
-            (len(board.get_available_piece_types(self.turn)) == 0)
+            (not Board.has_open_spaces(self.state)) or
+            (len(Board.get_available_piece_types(self.available_pieces, self.turn)) == 0)
         ):
-            winner = board.get_flat_winner()
+            winner = Board.get_flat_winner(self.state)
             score = self.__get_score(winner)
             return self.__feedback(action, reward=score, done=True)
 
@@ -84,22 +95,18 @@ class TakEnv(gym.Env):
     def render(self, mode='human', close=False):
         if close:
             return
-        self.viewer.render(self.board.state)
-
-    def _state(self):
-        return self.board.state
+        self.viewer.render(self.state)
 
 
     def __feedback(self, action, reward, done):
-        state = self._state()
 
         self.done = done
         self.reward = reward
 
-        return state, reward, self.done
+        return self.state, reward, self.done
 
     def __get_score(self, winner):
         if self.scoring == 'wins':
             return 1 if self.turn == winner else -1
 
-        return self.board.get_points(self.turn, winner)
+        return Board.get_points(self.board_size, self.available_pieces, self.turn, winner)

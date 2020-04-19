@@ -13,7 +13,8 @@ setup(
     'gym',
     'pygame',
     'numpy',
-    'networkx==2.1'
+    'networkx==2.1',
+    'memoization',
   ],
   zip_safe=False,
   include_package_data=True
