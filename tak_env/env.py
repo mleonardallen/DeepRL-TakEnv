@@ -5,7 +5,9 @@ import gym
 import numpy as np
 from tak_env.space import ActionSpace
 import tak_env.board as Board
-from tak_env.types import Player
+import tak_env.road as Road
+import tak_env.score as Score
+from tak_env.types import Player, Stone
 from tak_env.viewer import Viewer
 import copy
 
@@ -66,19 +68,24 @@ class TakEnv(gym.Env):
         if self.done:
             return self.__feedback(action, reward=0, done=True)
 
-        Board.act(self.state, action, self.available_pieces, self.turn)
+        if action.get('action') == 'place':
+            self.action_space.place(self.state, action, self.available_pieces, self.turn)
+        elif action.get('action') == 'move':
+            self.action_space.move(self.state, action)
 
         # game ends when road is connected
-        if Board.is_road_connected(self.state, self.turn):
+        spaces = Board.get_owned_spaces(self.state, self.turn, [Stone.FLAT, Stone.CAPITAL])
+        
+        if Road.is_connected(self.board_size, spaces):
             score = self.__get_score(self.turn)
             return self.__feedback(action, reward=score, done=True)
 
         # game ends if no open spaces or if any player runs out of pieces
         if (
             (not Board.has_open_spaces(self.state)) or
-            (len(Board.get_available_piece_types(self.available_pieces, self.turn)) == 0)
+            (len(self.get_available_piece_types(self.available_pieces, self.turn)) == 0)
         ):
-            winner = Board.get_flat_winner(self.state)
+            winner = Score.get_flat_winner(self.state)
             score = self.__get_score(winner)
             return self.__feedback(action, reward=score, done=True)
 
@@ -97,6 +104,17 @@ class TakEnv(gym.Env):
             return
         self.viewer.render(self.state)
 
+    def get_available_piece_types(self, available_pieces, player):
+        """ Returns all available types of pieces to place """
+        num_available = available_pieces.get(player)
+        available = []
+        if num_available.get('pieces', 0):
+            available.append(Stone.FLAT)
+        if num_available.get('pieces', 0):
+            available.append(Stone.STANDING)
+        if num_available.get('capstones', 0):
+            available.append(Stone.CAPITAL)
+        return available
 
     def __feedback(self, action, reward, done):
 
@@ -109,4 +127,4 @@ class TakEnv(gym.Env):
         if self.scoring == 'wins':
             return 1 if self.turn == winner else -1
 
-        return Board.get_points(self.board_size, self.available_pieces, self.turn, winner)
+        return Score.get_points(self.board_size, self.available_pieces, self.turn, winner)

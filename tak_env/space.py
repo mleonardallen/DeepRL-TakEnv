@@ -48,7 +48,7 @@ class ActionSpace():
             'action': ['place'],
             'terminal': [True],
             'to': Board.get_open_spaces(state),
-            'piece': Board.get_available_piece_types(available_pieces, turn)
+            'piece': self.env.get_available_piece_types(available_pieces, turn)
         })
 
     def get_movements(self, state, turn):
@@ -91,14 +91,14 @@ class ActionSpace():
                 continue
 
             pieces = Board.get_pieces_at_space(state, space_from, i.get('carry'))
-            can_move = Board.can_move(state, space_from, space_to, pieces)
+            can_move = self.can_move(state, space_from, space_to, pieces)
 
             # cannot move here, not valid
             if not can_move:
                 continue
 
             # if not terminal and next move is invalid then combination not valid
-            can_move_next = Board.can_move(state, space_to, next_space, pieces[-1:])
+            can_move_next = self.can_move(state, space_to, next_space, pieces[-1:])
             if not i.get('terminal') and not can_move_next:
                 continue
 
@@ -111,3 +111,57 @@ class ActionSpace():
         import itertools as it
         varNames = sorted(variants)
         return [dict(zip(varNames, prod)) for prod in it.product(*(variants[varName] for varName in varNames))]
+
+    def can_move(self, state, space_from, space_to, pieces = []):
+
+        if not space_to:
+            return False
+
+        to_piece = Board.get_pieces_at_space(state, space_to , 1)
+
+        # all stones can move on empty or flat stones
+        if to_piece[-1] in [Stone.EMPTY, Stone.FLAT]:
+            return True
+
+        # capital stones can move on flat stones
+        result = pieces[-1] == Stone.CAPITAL and to_piece == Stone.STANDING and len(pieces) == 1
+        return result
+
+    def place(self, state, action, available_pieces, player):
+        """ place action """
+        space = action.get('to')
+        piece = action.get('piece')
+        top = Board.get_top_index(state, space)
+        # TODO do not modify in place
+        state[space][top] = player * piece.value
+        # TODO do not modify in place
+        available_pieces = available_pieces.get(player)
+        if piece is Stone.CAPITAL:
+            available_pieces['capstones'] -= 1
+        else:
+            available_pieces['pieces'] -= 1
+
+    def move(self, state, action):
+        """ move action """
+        # extract info from action
+        place_from = action.get('from')
+        place_to = action.get('to')
+        carry = action.get('carry')
+
+        values = []
+        from_top = Board.get_top_index(state, place_from)
+
+        # TODO do not modify in place
+        for idx in range(from_top - carry, from_top):
+            values.append(state[place_from][idx])
+            state[place_from][idx] = 0
+
+        to_top = Board.get_top_index(state, place_to)
+
+        for idx, value in enumerate(values):
+            # TODO FIX THIS
+            # when moving, first make sure the layer exists
+            # if to_top + idx == len(state):
+            #     add_layer(state)
+
+            state[place_to][to_top + idx] = value
