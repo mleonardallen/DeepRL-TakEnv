@@ -9,7 +9,6 @@ register(
         'board_size': 3,
         'pieces': 10,
         'capstones': 0,
-        'height': 20,
         'scoring': 'points'
     }
 )
@@ -21,7 +20,6 @@ register(
         'board_size': 4,
         'pieces': 15,
         'capstones': 0,
-        'height': 30,
         'scoring': 'points'
     }
 )
@@ -33,7 +31,6 @@ register(
         'board_size': 5,
         'pieces': 21,
         'capstones': 1,
-        'height': 42,
         'scoring': 'points'
     }
 )
@@ -45,7 +42,6 @@ register(
         'board_size': 6,
         'pieces': 30,
         'capstones': 1,
-        'height': 60,
         'scoring': 'points'
     }
 )
@@ -57,7 +53,6 @@ register(
         'board_size': 7,
         'pieces': 40,
         'capstones': 1,
-        'height': 80,
         'scoring': 'points'
     }
 )
@@ -69,7 +64,6 @@ register(
         'board_size': 7,
         'pieces': 40,
         'capstones': 2,
-        'height': 80,
         'scoring': 'points'
     }
 )
@@ -81,7 +75,6 @@ register(
         'board_size': 8,
         'pieces': 50,
         'capstones': 2,
-        'height': 100,
         'scoring': 'points'
     }
 )
@@ -95,7 +88,6 @@ register(
         'board_size': 3,
         'pieces': 10,
         'capstones': 0,
-        'height': 20,
         'scoring': 'wins'
     }
 )
@@ -107,7 +99,6 @@ register(
         'board_size': 4,
         'pieces': 15,
         'capstones': 0,
-        'height': 30,
         'scoring': 'wins'
     }
 )
@@ -119,7 +110,6 @@ register(
         'board_size': 5,
         'pieces': 21,
         'capstones': 1,
-        'height': 42,
         'scoring': 'wins'
     }
 )
@@ -131,7 +121,6 @@ register(
         'board_size': 6,
         'pieces': 30,
         'capstones': 1,
-        'height': 60,
         'scoring': 'wins'
     }
 )
@@ -143,7 +132,6 @@ register(
         'board_size': 7,
         'pieces': 40,
         'capstones': 1,
-        'height': 80,
         'scoring': 'wins'
     }
 )
@@ -155,7 +143,6 @@ register(
         'board_size': 7,
         'pieces': 40,
         'capstones': 2,
-        'height': 80,
         'scoring': 'wins'
     }
 )
@@ -167,7 +154,6 @@ register(
         'board_size': 8,
         'pieces': 50,
         'capstones': 2,
-        'height': 100,
         'scoring': 'wins'
     }
 )

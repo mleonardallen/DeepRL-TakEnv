@@ -29,13 +29,12 @@ def get_owned_spaces(state, player, stones_types = None):
     # determine which stones types to look for
     if stones_types is None:
         stones_types = [Stone.FLAT, Stone.STANDING, Stone.CAPITAL]
-    stones_types = tuple([x.value * player for x in stones_types])
-    return get_spaces(state, stones_types)
+    stones_types = [x.value * player for x in stones_types]
+    return get_matching_spaces(state, stones_types)
 
 def get_movement_spaces(state):
     # todo valid movement pieces are filtered out later because of combinations,
-    # todo simplify this.
-    # available spaces to move
+    # capital stones are able to move on standing so those are included
     stones_types = (
         Stone.EMPTY.value, 
         Stone.FLAT.value,
@@ -44,24 +43,18 @@ def get_movement_spaces(state):
         -Stone.STANDING.value
     )
 
-    return get_spaces(state, stones_types)
+    return get_matching_spaces(state, stones_types)
 
-def get_pieces_at_space(state, space, num_pieces):
+def get_pieces_at_space(state, space):
+    top_idx = get_top_index(state, space)
+    column = state[:,space[0],space[1]]
+    if get_height(state) == top_idx + 1:
+        return column[-1:]
 
-    idx = get_top_index(state, space)
-    if idx == 0:
-        return [Stone.EMPTY]
+    top_occupied = top_idx + 1
+    return column[top_occupied:]
 
-    pieces = []
-    top_occupied = idx - 1
-    for i in range(num_pieces):
-        to_value = state[space][top_occupied - i]
-        to_value = np.absolute(to_value)
-        pieces.insert(0, Stone(to_value))
-
-    return pieces
-
-def get_spaces(state, stones_types):
+def get_matching_spaces(state, stones_types):
     """
     get matching indexes
     """
@@ -72,53 +65,80 @@ def get_spaces(state, stones_types):
         [False False False]]
     """
     top_layer_ravel = get_top_layer(state).ravel()
-    size = state.shape[0]
+    size = get_size(state)
     ix = np.in1d(top_layer_ravel, stones_types).reshape((size, size))
 
     """
     Example result
-    ((0,1), (1,0))
+    [(0,1), (1,0)]
     """
     spaces = np.where(ix)
-    return tuple((zip(*spaces)))
+    return list(zip(*spaces))
 
 def get_open_spaces(state):
     board = get_top_layer(state)
     spaces = np.array(np.where(board == 0))
-    return tuple((zip(*spaces)))
+    return list(zip(*spaces))
 
 def has_open_spaces(state):
     return len(get_open_spaces(state)) > 0
 
 def get_top_layer(state):
     merged = []
-    height = state.shape[-1]
-    for idx in reversed(range(height)):
-        layer = copy.copy(state[:, :, idx])
+    height = get_height(state)
+    for idx in range(height):
+        layer = copy.copy(state[idx, :, :])
         if len(merged):
             layer[merged != 0] = merged[merged != 0]
 
         merged = layer
-
     return merged
 
+def get_height(state):
+    return state.shape[0]
+
+def get_size(state):
+    return state.shape[-1]
+
 def get_top_index(state, space):
-    height = state.shape[-1]
-    for idx in range(height):
-        if state[space][idx] == 0:
+    """ get top available index """
+    height = get_height(state)
+    for idx in reversed(range(height)):
+        if state[idx][space] == 0:
             return idx
-    return len(state)
+    return -1
 
 def is_adjacent(space1, space2):
     """ Returns {boolean} if two spaces are adjacent """
     diff = np.sum(np.absolute(np.array(space1) - np.array(space2)))
     return diff == 1
 
-def add_layer(state):
-    size = state.shape[0]
-    # TODO do not modify in place
-    return np.append(
+# manipulation of board
+
+def remove(state, space, n):
+    state = np.copy(state)
+    idx = get_top_index(state, space)
+    state[:,space[0],space[1]][idx+1:idx+1+n] = 0
+    return state
+
+def put(state, space, pieces):
+    state = np.copy(state)
+    to_top = get_top_index(state, space)
+    for idx, value in enumerate(pieces):
+        # when moving, first make sure the layer exists
+        place_at = to_top - idx
+        if place_at < 0:
+            state = add_layer(state)
+            place_at = 0
+        state[place_at][space] = value
+    return state
+
+def add_layer(state, n=1):
+    size = get_size(state)
+    state = np.copy(state)
+    return np.insert(
         state,
-        np.zeros((1, size, size)),
+        0,
+        np.zeros((n, size, size)),
         axis=0
     )

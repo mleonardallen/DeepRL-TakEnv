@@ -32,5 +32,4 @@ def get_flat_winner(state):
         return Player.WHITE.value
     elif len(white) < len(black):
         return Player.BLACK.value
-
     return 0

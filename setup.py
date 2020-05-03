@@ -15,6 +15,8 @@ setup(
     'numpy',
     'networkx==2.1',
     'memoization',
+    'pytest',
+    'pytest-describe'
   ],
   zip_safe=False,
   include_package_data=True

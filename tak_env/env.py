@@ -19,7 +19,7 @@ class TakEnv(gym.Env):
         'video.frames_per_second' : 50
     }
 
-    def __init__(self, board_size, scoring, pieces, capstones, height):
+    def __init__(self, board_size, scoring, pieces, capstones):
 
         """
         Args:
@@ -33,7 +33,6 @@ class TakEnv(gym.Env):
 
         # set board properties
         self.board_size = board_size
-        self.height = height
         self.capstones = capstones
         self.pieces = pieces
 
@@ -56,11 +55,10 @@ class TakEnv(gym.Env):
         self.available_pieces[Player.WHITE.value] = {'pieces': self.pieces, 'capstones': self.capstones}
         self.available_pieces[Player.BLACK.value] = {'pieces': self.pieces, 'capstones': self.capstones}
 
-        self.state = np.zeros((self.board_size, self.board_size, self.height))
+        self.state = np.zeros((1, self.board_size, self.board_size))
 
         # multipart moves keep track of previous action
         self.continued_action = None
-
         return self.state
 
     def step(self, action):
@@ -69,9 +67,10 @@ class TakEnv(gym.Env):
             return self.__feedback(action, reward=0, done=True)
 
         if action.get('action') == 'place':
-            self.action_space.place(self.state, action, self.available_pieces, self.turn)
+            self.state = self.action_space.place(self.state, action, self.available_pieces, self.turn)
+            self.update_pieces(self.available_pieces, action, self.turn)
         elif action.get('action') == 'move':
-            self.action_space.move(self.state, action)
+            self.state = self.action_space.move(self.state, action)
 
         # game ends when road is connected
         spaces = Board.get_owned_spaces(self.state, self.turn, [Stone.FLAT, Stone.CAPITAL])
@@ -98,6 +97,15 @@ class TakEnv(gym.Env):
 
         # game still going
         return self.__feedback(action, reward=0, done=False)
+
+    def update_pieces(self, available, action, player):
+        available = available.get(player)
+        piece = action.get('piece')
+        if piece is Stone.CAPITAL:
+            available['capstones'] -= 1
+        else:
+            available['pieces'] -= 1
+        return available
 
     def render(self, mode='human', close=False):
         if close:

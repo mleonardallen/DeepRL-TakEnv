@@ -3,150 +3,98 @@ import time
 from tak_env.types import Stone, Player
 import os
 import sys
+import numpy as np
+from operator import itemgetter
+
 
 class Viewer():
 
-    def __init__(self, env, delay=0.5):
+    def __init__(self, env, delay=0.5, block_size=150):
+     
+        pygame = importlib.import_module('pygame')
+        pygame.init()
 
-        self.block_size = 150
-        self.env = env
-        self.board_size = (self.env.board_size, self.env.board_size)
+        board_width = env.board_size * block_size
+        screen = pygame.display.set_mode([board_width, board_width])
 
-        self.colors = {
-            'black': (0, 0, 0),
-            'white': (255, 255, 255),
-            'orange': (255, 128, 0)
+        self.config = {
+            'block_size': block_size,
+            'delay': delay,
+            'env': env,
+            'pygame': pygame,
+            'screen': screen,
         }
-
-        self.delay = delay
-
-        self.size = (
-            (self.board_size[0]) * self.block_size,
-            (self.board_size[1]) * self.block_size
-        )
-
-        self.width = self.block_size * self.board_size[0]
-
-        self.bg_color = self.colors['white']
-        self.pygame = None
-
-    def init(self):
-        if self.pygame:
-            return
-
-        self.pygame = importlib.import_module('pygame')
-        self.pygame.init()
-
-        image_dir = os.path.dirname(__file__) + '/images/'
-
-        white_flat = self.pygame.image.load(image_dir + 'white.png')
-        size = white_flat.get_size()
-        size = (int(size[0] / 4), int(size[1] / 4))
-        white_flat = self.pygame.transform.scale(white_flat, size)
-
-        black_flat = self.pygame.image.load(image_dir + 'black.png')
-        size = black_flat.get_size()
-        size = (int(size[0] / 4), int(size[1] / 4))
-        black_flat = self.pygame.transform.scale(black_flat, size)
-
-        white_standing = self.pygame.image.load(image_dir +'white_standing.png')
-        size = white_standing.get_size()
-        size = (int(size[0] / 4), int(size[1] / 4))
-        white_standing = self.pygame.transform.scale(white_standing, size)
-
-        black_standing = self.pygame.image.load(image_dir + 'black_standing.png')
-        size = black_standing.get_size()
-        size = (int(size[0] / 4), int(size[1] / 4))
-        black_standing = self.pygame.transform.scale(black_standing, size)
-
-        self.images = {
-            'WHITE': {
-                'FLAT': white_flat,
-                'STANDING': white_standing
-            },
-            'BLACK': {
-                'FLAT': black_flat,
-                'STANDING': black_standing
-            }
-        }
-
-        self.screen = self.pygame.display.set_mode(self.size)
-        self.font = self.pygame.font.Font(None, 64)
-        self.font_small = self.pygame.font.SysFont("monospace", 24)
 
     def render(self, state):
 
-        self.init()
-        self.screen.fill(self.bg_color)
-        self.draw_lines()
+        env, pygame, screen, block_size, delay = itemgetter(
+            'env', 'pygame', 'screen', 'block_size', 'delay'
+        )(self.config)
 
-        for rowidx, row in enumerate(state):
-            for colidx, column in enumerate(row):
-                for height, stone in enumerate(column):
-                    self.stone(stone, (rowidx, colidx), height)
+        screen.fill((0,0,0)) # erase screen 
+        draw_lines(pygame, screen, env.board_size, block_size)
+        
+        board_height = state.shape[0]
+        for (idx, *space), value in sorted(np.ndenumerate(state), reverse=True):
+            offset = board_height - idx
+            draw_stone(pygame, screen, block_size, offset, space, value)
 
-        black = self.env.available_pieces.get(Player.BLACK.value)
-        white = self.env.available_pieces.get(Player.WHITE.value)
-
-        white_label = self.font_small.render('White:' + str(white.get('pieces')), 1, (0,0,255))
-        self.screen.blit(white_label, (self.width - 120, 2))
-        black_label = self.font_small.render('Black:' + str(black.get('pieces')), 1, (0,0,255))
-        self.screen.blit(black_label, (self.width - 120, 24))
-
-        if self.env.done:
-            reward = self.env.reward * self.env.turn
+        if env.done:
+            reward = env.reward * env.turn
             if reward > 0:
-                text = 'White Wins!'
+                print('White Wins!')
             elif reward < 0:
-                text = 'Black Wins!'
+                print('Black Wins!')
             else:
-                text = 'Tie'
+                print('Tie')
 
-            label = self.font.render(text, 1, (255,0,0))
-            self.screen.blit(label, (2, 2))
+        pygame.display.flip()
+        wait(env.done, delay)
 
-        self.pygame.display.flip()
-
-        if self.env.done:
-            if sys.version_info >= (3, 0):
-                input("Press Enter key to continue...")
-            else:
-                raw_input("Press Enter key to continue...")
+def wait(done, delay):
+    if done:
+        if sys.version_info >= (3, 0):
+            input("Press Enter key to continue...")
         else:
-            time.sleep(self.delay)
+            raw_input("Press Enter key to continue...")
+    else:
+        time.sleep(delay)
 
-    def stone(self, value, position, height):
+def draw_stone(pygame, screen, block_size, height, space, value):
 
-        if value == 0:
-            return
+    if value == 0:
+        return
 
-        stone = Stone(abs(value))
-        key = 'WHITE' if value > 0 else 'BLACK'
-        image = self.images.get(key).get(stone.name)
+    image = get_image(pygame, value)
+    image_width, image_height = image.get_size()
 
-        image_width, image_height = image.get_size()
+    row, col = space
+    stack_offset = height * 10
 
-        row, col = position
-        stack_offset = height * 10
+    posx = col * block_size + (block_size / 2) - image_width / 2
+    posy = row * block_size + block_size - image_height - stack_offset
 
-        posx = col * self.block_size + (self.block_size / 2) - image_width / 2
-        posy = row * self.block_size + self.block_size - image_height - stack_offset
+    screen.blit(image,(posx,posy))
 
-        self.screen.blit(image,(posx,posy))
+def draw_lines(pygame, screen, board_size, block_size):
+    color = (255,255,255)
+    length = board_size * block_size
+    for i in range(board_size):
+        offset = i * block_size
+        pygame.draw.line(screen, color, (offset, length), (offset, 0))
+        pygame.draw.line(screen, color, (length, offset), (0, offset))
 
-    def draw_lines(self):
-        for i in range(self.board_size[0]):
-            self.pygame.draw.line(
-                self.screen,
-                (0,0,0),
-                (i*self.block_size, self.size[0]),
-                (i*self.block_size,0)
-            )
+def get_image(pygame, piece):
+    return {
+        Stone.FLAT.value: get_image_from_filename(pygame, 'white.png'),
+        Stone.STANDING.value: get_image_from_filename(pygame, 'white_standing.png'),
+        Stone.FLAT.value * -1: get_image_from_filename(pygame, 'black.png'),
+        Stone.STANDING.value * -1: get_image_from_filename(pygame, 'black_standing.png'),
+    }[piece]
 
-        for i in range(self.board_size[1]):
-            self.pygame.draw.line(
-                self.screen,
-                self.colors['black'],
-                (self.size[1], i*self.block_size),
-                (0, i*self.block_size)
-            )
+def get_image_from_filename(pygame, filename):
+    image_dir = os.path.dirname(__file__) + '/images/'
+    image = pygame.image.load(image_dir + filename)
+    size = image.get_size()
+    size = (int(size[0] / 4), int(size[1] / 4))
+    return pygame.transform.scale(image, size)
