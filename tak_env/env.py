@@ -56,9 +56,6 @@ class TakEnv(gym.Env):
         self.available_pieces[Player.BLACK.value] = {'pieces': self.pieces, 'capstones': self.capstones}
 
         self.state = np.zeros((1, self.board_size, self.board_size))
-
-        # multipart moves keep track of previous action
-        self.continued_action = None
         return self.state
 
     def step(self, action):
@@ -89,11 +86,7 @@ class TakEnv(gym.Env):
             return self.__feedback(action, reward=score, done=True)
 
         # update player turn
-        if action.get('terminal'):
-            self.turn *= -1
-            self.continued_action = None
-        else:
-            self.continued_action = action
+        self.turn *= -1
 
         # game still going
         return self.__feedback(action, reward=0, done=False)

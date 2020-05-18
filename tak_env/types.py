@@ -10,3 +10,9 @@ class Stone(Enum):
 class Player(Enum):
     BLACK = -1
     WHITE = 1
+
+class Direction(Enum):
+    UP = '+'
+    DOWN = '-'
+    LEFT = '<'
+    RIGHT = '>'

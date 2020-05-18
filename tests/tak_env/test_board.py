@@ -232,10 +232,6 @@ def describe_get_pieces_at_space():
   def it_returns_zero_for_empty_space(state):
     assert board.get_pieces_at_space(state, (0,0)).tolist() == [0]
 
-def describe_get_movement_spaces():
-  # TODO
-  pass
-
 def describe_get_owned_spaces():
   @fixture
   def state():
@@ -336,6 +332,25 @@ def describe_put():
       ]
     ]
 
+  def it_puts_piece_at_space_in_correct_order(state):
+    assert board.put(state, (0,0), [2, 1]).tolist() == [
+      [
+        [0,0,0],
+        [1,0,1],
+        [0,0,0],
+      ],
+      [
+        [2,2,0],
+        [2,-2,2],
+        [0,2,0],
+      ],
+      [
+        [1,3,0],
+        [3,3,3],
+        [0,3,0],
+      ]
+    ]
+
   def it_puts_3_pieces_at_space(state):
     assert board.put(state, (0,0), [1, 1, 1]).tolist() == [
       [
@@ -381,5 +396,36 @@ def describe_put():
         [1,3,0],
         [3,3,3],
         [0,3,0],
+      ]
+    ]
+
+def describe_move():
+
+  @fixture
+  def state():
+    return np.array([
+      [
+        [0,0,0],
+        [0,2,0],
+        [0,0,0],
+      ],
+      [
+        [0,-3,0],
+        [1,1,0],
+        [0,0,0],
+      ]
+    ])
+
+  def xxx(state):
+    assert board.move(state, (1,1), (1,2), 2).tolist() == [
+      [
+        [0,0,0],
+        [0,0,2],
+        [0,0,0],
+      ],
+      [
+        [0,-3,0],
+        [1,0,1],
+        [0,0,0],
       ]
     ]

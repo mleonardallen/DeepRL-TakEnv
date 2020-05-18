@@ -32,19 +32,6 @@ def get_owned_spaces(state, player, stones_types = None):
     stones_types = [x.value * player for x in stones_types]
     return get_matching_spaces(state, stones_types)
 
-def get_movement_spaces(state):
-    # todo valid movement pieces are filtered out later because of combinations,
-    # capital stones are able to move on standing so those are included
-    stones_types = (
-        Stone.EMPTY.value, 
-        Stone.FLAT.value,
-        -Stone.FLAT.value,
-        Stone.STANDING.value,
-        -Stone.STANDING.value
-    )
-
-    return get_matching_spaces(state, stones_types)
-
 def get_pieces_at_space(state, space):
     top_idx = get_top_index(state, space)
     column = state[:,space[0],space[1]]
@@ -115,6 +102,13 @@ def is_adjacent(space1, space2):
 
 # manipulation of board
 
+def move(state, space_from, space_to, n):
+    state = np.copy(state)
+    pieces = get_pieces_at_space(state, space_from)[:n]
+    state = remove(state, space_from, n)
+    state = put(state, space_to, pieces)
+    return state
+
 def remove(state, space, n):
     state = np.copy(state)
     idx = get_top_index(state, space)
@@ -124,7 +118,7 @@ def remove(state, space, n):
 def put(state, space, pieces):
     state = np.copy(state)
     to_top = get_top_index(state, space)
-    for idx, value in enumerate(pieces):
+    for idx, value in enumerate(reversed(pieces)):
         # when moving, first make sure the layer exists
         place_at = to_top - idx
         if place_at < 0:
