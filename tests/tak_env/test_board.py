@@ -370,6 +370,25 @@ def describe_put():
       ]
     ]
 
+  def it_puts_flattens_standing_with_capstone(state):
+    assert board.put(state, (1,1), [3]).tolist() == [
+      [
+        [0,0,0],
+        [1,3,1],
+        [0,0,0],
+      ],
+      [
+        [0,2,0],
+        [2,-1,2],
+        [0,2,0],
+      ],
+      [
+        [0,3,0],
+        [3,3,3],
+        [0,3,0],
+      ]
+    ]
+
   def it_puts_pieces_at_space_and_adds_layers_if_needed(state):
     assert board.put(state, (0,0), [1, 1, 1, 1, 1]).tolist() == [
       [

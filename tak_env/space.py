@@ -99,7 +99,7 @@ def is_valid_move_action(state, action):
         if space_to == None:
             return False
 
-        if not is_valid_move_part(state, pieces[-x:], space_to):
+        if not is_valid_move_part(state, space_to, pieces[-x:]):
             return False
         
         space_from = space_to
@@ -107,7 +107,7 @@ def is_valid_move_action(state, action):
 
     return True
 
-def is_valid_move_part(state, pieces, space_to):
+def is_valid_move_part(state, space_to, pieces):
     """ is the move valid accoring to the rules?
     https://cheapass.com/wp-content/uploads/2016/07/Tak-Beta-Rules.pdf
     """

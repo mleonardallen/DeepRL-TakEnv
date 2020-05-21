@@ -66,19 +66,19 @@ def describe_is_valid_move_part():
     ])
 
   def it_is_valid_to_move_onto_empty(state):
-    assert space.is_valid_move_part(state, [1], (1,1)) == True
+    assert space.is_valid_move_part(state, (1,1), [1]) == True
 
   def it_is_valid_to_move_onto_flat(state):
-    assert space.is_valid_move_part(state, [1], (0,0)) == True
+    assert space.is_valid_move_part(state, (0,0), [1]) == True
 
   def it_is_not_valid_to_move_onto_standing(state):
-    assert space.is_valid_move_part(state, [1], (1,0)) == False
+    assert space.is_valid_move_part(state, (1,0), [1]) == False
 
   def it_is_valid_to_move_onto_standing_if_captital(state):
-    assert space.is_valid_move_part(state, [-3], (1,0)) == True
+    assert space.is_valid_move_part(state, (1,0), [-3]) == True
 
   def it_is_not_valid_to_move_onto_capital(state):
-    assert space.is_valid_move_part(state, [1], (0,2)) == False
+    assert space.is_valid_move_part(state, (0,2), [1]) == False
 
 def describe_get_next_space():
 

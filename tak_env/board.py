@@ -118,6 +118,16 @@ def remove(state, space, n):
 def put(state, space, pieces):
     state = np.copy(state)
     to_top = get_top_index(state, space)
+    
+    # check if standing stone is flattened
+    is_capstone = len(pieces) == 1 and abs(pieces[0]) == Stone.CAPITAL.value
+    top_piece = get_pieces_at_space(state, space)[0]
+    top_is_standing = Stone(abs(top_piece)).value == Stone.STANDING.value
+    should_flatten = is_capstone and top_is_standing
+    if should_flatten:
+        # -2/2 = -1, 2/2 = 1
+        state[to_top+1][space] /= 2
+
     for idx, value in enumerate(reversed(pieces)):
         # when moving, first make sure the layer exists
         place_at = to_top - idx
