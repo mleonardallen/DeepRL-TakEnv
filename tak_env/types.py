@@ -7,6 +7,11 @@ class Stone(Enum):
     CAPITAL = 3
     EMPTY = 0
 
+class StoneLetter(Enum):
+    FLAT = 'F'
+    STANDING = 'S'
+    CAPITAL = 'C'
+
 class Player(Enum):
     BLACK = -1
     WHITE = 1
