@@ -22,25 +22,33 @@ class ActionSpace():
         return np.random.choice(valid)
 
     def place(self, state, action, available_pieces, player):
-        """ place action """
-        space = action.get('to')
-        piece = action.get('piece')
-        return board.put(state, space, [player * piece])
+        return place(state, action, available_pieces, player)
 
     def move(self, state, action):
-        """ move action """
-        carry = action.get('carry')
-        direction = action.get('direction')
-        space_from = action.get('from')
-        board_size = board.get_size(state)
+        return move(state, action)
 
-        # perform individual move parts
-        for n in carry:
-            space_to = get_next_space(board_size, space_from, direction)
-            state = board.move(state, space_from, space_to, n)
-            space_from = space_to
+def place(state, action, available_pieces, player):
+    """ place action """
+    space = action.get('to')
+    piece = action.get('piece')
+    return board.put(state, space, [player * piece])
 
-        return state
+def move(state, action):
+    """ move action """
+    carry = action.get('carry')
+    direction = action.get('direction')
+    space_from = action.get('from')
+    board_size = board.get_size(state)
+
+    # perform individual move parts
+    total = sum(carry)
+    for n in carry:
+        space_to = get_next_space(board_size, space_from, direction)
+        state = board.move(state, space_from, space_to, total)
+        space_from = space_to
+        total -= n
+
+    return state
 
 def get_placements(state, stone_types):
     """ Returns all available piece placement actions """

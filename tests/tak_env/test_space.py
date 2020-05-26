@@ -3,41 +3,51 @@ from tak_env import space
 from tak_env.types import Stone, Direction
 import numpy as np
 
-# def describe_is_valid_move_action():
-
-#   @fixture
-#   def state():
-#     return np.array([
-#       [
-#         [1,0,0],
-#         [2,0,0],
-#         [1,0,0],
-#       ],
-#       [
-#         [-1,0,-2],
-#         [-1,0,-1],
-#         [-1,-1,-2],
-#       ],
-#       [
-#         [1,0,2],
-#         [1,0,1],
-#         [1,1,2],
-#       ],
-#       [
-#         [1,0,2],
-#         [1,0,1],
-#         [1,1,2],
-#       ]
-#     ])
-
-#   def should_be_valid_if_valid_single_move(state):
-#     assert space.is_valid_move_action(state, {
-#       'action': 'move',
-#       'carry': (1,2,1),
-#       'direction': Direction.UP.value,
-#       'from': (1,0),
-#     }) == True
-#     assert False
+def describe_move():
+  @fixture
+  def state():
+    return np.array([
+      [
+        [0,0,0],
+        [0,0,0],
+        [2,0,0],
+      ],
+      [
+        [0,0,0],
+        [0,0,0],
+        [1,0,0],
+      ],
+      [
+        [0,0,0],
+        [0,0,0],
+        [1,0,0],
+      ]
+    ])
+  
+  def should_apply_each_move_part(state):
+    assert space.move(state, {
+      'action': 'move',
+      'carry': (2, 1),
+      'from': (2, 0),
+      'direction': '>',
+    }).tolist() == [
+      # TODO remove empty layer?
+      [
+        [0,0,0],
+        [0,0,0],
+        [0,0,0],
+      ],
+      [
+        [0,0,0],
+        [0,0,0],
+        [0,1,0],
+      ],
+      [
+        [0,0,0],
+        [0,0,0],
+        [0,1,2],
+      ]
+    ]
 
 def describe_is_valid_move_part():
   @fixture

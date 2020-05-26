@@ -17,11 +17,14 @@ def to_action(ptn, size):
   direction = get_movement_direction(ptn)
 
   if direction:
-    fromSpace, carry = ptn.split(direction)
+    space_from, carry = ptn.split(direction)
+    space_from = get_space(space_from[-2:], size)
+    carry = tuple([int(x) for x in carry])
+
     return {
       'action': 'move',
-      'carry': tuple([int(x) for x in carry]),
-      'from': get_space(fromSpace[-2:], size),
+      'carry': carry,
+      'from': space_from,
       'direction': direction,
     }
 
