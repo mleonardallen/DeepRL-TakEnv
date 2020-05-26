@@ -40,7 +40,7 @@ def describe_get_action():
 
   @pytest.mark.parametrize("ptn,size,expected", testdata)
   def it_does(ptn, size, expected):
-      assert notation.get_action(ptn, size) == expected
+      assert notation.to_action(ptn, size) == expected
 
 def describe_standardize():
   testdata = [

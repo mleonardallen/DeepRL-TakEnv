@@ -1,7 +1,18 @@
 from string import ascii_lowercase
 from tak_env.types import Direction, Stone, StoneLetter
 
-def get_action(ptn, size):
+def to_ptn(action, size):
+  if action.get('action') == 'move':
+    space_from = get_square(action.get('from'), size)
+    carry = ''.join([str(x) for x in action.get('carry')])
+    direction = action.get('direction')
+    return f'{space_from}{direction}{carry}'
+
+  space_to = get_square(action.get('to'), size)
+  piece = get_letter_value(action.get('piece'))
+  return f'{piece}{space_to}'
+  
+def to_action(ptn, size):
   ptn = standardize(ptn)
   direction = get_movement_direction(ptn)
 
@@ -49,6 +60,15 @@ def get_stone_value(letter):
     return Stone.STANDING.value
   if letter == StoneLetter.CAPITAL.value:
     return Stone.CAPITAL.value
+  return None
+
+def get_letter_value(stone):
+  if stone == Stone.FLAT.value:
+    return StoneLetter.FLAT.value
+  if stone == Stone.STANDING.value:
+    return StoneLetter.STANDING.value
+  if stone == Stone.CAPITAL.value:
+    return StoneLetter.CAPITAL.value
   return None
 
 def get_movement_direction(ptn):

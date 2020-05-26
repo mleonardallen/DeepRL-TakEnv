@@ -48,7 +48,7 @@ class TakEnv(gym.Env):
     def reset(self):
 
         self.done = False
-        self.turn = np.random.choice([1, -1])
+        self.turn = 1
         self.reward = 0
         
         self.available_pieces = {}

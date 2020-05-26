@@ -17,7 +17,7 @@ class ActionSpace():
         stone_types = self.env.get_available_piece_types(available, turn)
 
         valid = get_movements(state, turn) + \
-            get_placements(state, turn, stone_types)
+            get_placements(state, stone_types)
 
         return np.random.choice(valid)
 
@@ -42,7 +42,7 @@ class ActionSpace():
 
         return state
 
-def get_placements(state, turn, stone_types):
+def get_placements(state, stone_types):
     """ Returns all available piece placement actions """
     return get_combinations({
         'action': ['place'],
@@ -77,6 +77,14 @@ def get_carry_partitions(carry_limit):
         carry.extend(get_partitions(i))
     # extend messes up types, so convert back to tuple
     return [x if type(x) is tuple else (x,) for x in carry]
+
+def is_valid_action(state, action):
+    if action.get('action') == 'place':
+        spaceTo = action.get('to')
+        openSpaces = board.get_open_spaces(state)
+        return spaceTo in openSpaces
+    
+    return is_valid_move_action(state, action)
 
 def is_valid_move_action(state, action):
     
