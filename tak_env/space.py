@@ -25,7 +25,7 @@ class ActionSpace():
         """ place action """
         space = action.get('to')
         piece = action.get('piece')
-        return board.put(state, space, [player * piece.value])
+        return board.put(state, space, [player * piece])
 
     def move(self, state, action):
         """ move action """

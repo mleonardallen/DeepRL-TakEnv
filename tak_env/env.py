@@ -110,18 +110,16 @@ class TakEnv(gym.Env):
         num_available = available_pieces.get(player)
         available = []
         if num_available.get('pieces', 0):
-            available.append(Stone.FLAT)
+            available.append(Stone.FLAT.value)
         if num_available.get('pieces', 0):
-            available.append(Stone.STANDING)
+            available.append(Stone.STANDING.value)
         if num_available.get('capstones', 0):
-            available.append(Stone.CAPITAL)
+            available.append(Stone.CAPITAL.value)
         return available
 
     def __feedback(self, action, reward, done):
-
         self.done = done
         self.reward = reward
-
         return self.state, reward, self.done
 
     def __get_score(self, winner):
