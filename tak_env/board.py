@@ -1,5 +1,5 @@
 import numpy as np
-from tak_env.types import Stone, Player
+from tak_env.types import Stone, Player, Direction
 import copy
 import itertools
 from memoization import cached
@@ -100,9 +100,35 @@ def is_adjacent(space1, space2):
     diff = np.sum(np.absolute(np.array(space1) - np.array(space2)))
     return diff == 1
 
+def get_next_space(board_size, space_from, direction):
+    row, col = space_from
+    if (direction == Direction.UP.value):
+        row -= 1
+    if (direction == Direction.DOWN.value):
+        row += 1
+    if (direction == Direction.LEFT.value):
+        col -= 1
+    if (direction == Direction.RIGHT.value):
+        col += 1
+
+    space_to = (row, col)
+    if space_to[0] not in range(board_size) or space_to[1] not in range(board_size):
+        return None
+    return space_to
+
 # manipulation of board
 
-def move(state, space_from, space_to, n):
+def move(state, space_from, direction, carry):
+    total = sum(carry)
+    board_size = get_size(state)
+    for n in carry:
+        space_to = get_next_space(board_size, space_from, direction)
+        state = move_part(state, space_from, space_to, total)
+        space_from = space_to
+        total -= n
+    return state
+
+def move_part(state, space_from, space_to, n):
     state = np.copy(state)
     pieces = get_pieces_at_space(state, space_from)[:n]
     state = remove(state, space_from, n)
@@ -125,6 +151,7 @@ def put(state, space, pieces):
     top_is_standing = Stone(abs(top_piece)).value == Stone.STANDING.value
     should_flatten = is_capstone and top_is_standing
     if should_flatten:
+        # Standing stone = 2, Flat stone = 1
         # -2/2 = -1, 2/2 = 1
         state[to_top+1][space] /= 2
 

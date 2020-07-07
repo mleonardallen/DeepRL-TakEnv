@@ -418,7 +418,7 @@ def describe_put():
       ]
     ]
 
-def describe_move():
+def describe_move_part():
 
   @fixture
   def state():
@@ -436,7 +436,7 @@ def describe_move():
     ])
 
   def xxx(state):
-    assert board.move(state, (1,1), (1,2), 2).tolist() == [
+    assert board.move_part(state, (1,1), (1,2), 2).tolist() == [
       [
         [0,0,0],
         [0,0,2],
@@ -448,3 +448,24 @@ def describe_move():
         [0,0,0],
       ]
     ]
+
+def describe_get_next_space():
+
+  @fixture
+  def board_size():
+    return 3
+
+  def it_gets_next_space_up(board_size):
+    assert board.get_next_space(board_size, (1,1), types.Direction.UP.value) == (0,1)
+
+  def it_gets_next_space_down(board_size):
+    assert board.get_next_space(board_size, (1,1), types.Direction.DOWN.value) == (2,1)
+
+  def it_gets_next_space_left(board_size):
+    assert board.get_next_space(board_size, (1,1), types.Direction.LEFT.value) == (1,0)
+
+  def it_gets_next_space_right(board_size):
+    assert board.get_next_space(board_size, (1,1), types.Direction.RIGHT.value) == (1,2)
+
+  def it_returns_none_if_invalid(board_size):
+    assert board.get_next_space(board_size, (0,0), types.Direction.UP.value) == None

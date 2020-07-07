@@ -35,20 +35,10 @@ def place(state, action, available_pieces, player):
 
 def move(state, action):
     """ move action """
-    carry = action.get('carry')
-    direction = action.get('direction')
     space_from = action.get('from')
-    board_size = board.get_size(state)
-
-    # perform individual move parts
-    total = sum(carry)
-    for n in carry:
-        space_to = get_next_space(board_size, space_from, direction)
-        state = board.move(state, space_from, space_to, total)
-        space_from = space_to
-        total -= n
-
-    return state
+    direction = action.get('direction')
+    carry = action.get('carry')
+    return board.move(state, space_from, direction, carry)
 
 def get_placements(state, stone_types):
     """ Returns all available piece placement actions """
@@ -111,7 +101,7 @@ def is_valid_move_action(state, action):
     # are individual move parts valid?
     for x in carry:
 
-        space_to = get_next_space(board_size, space_from, direction)
+        space_to = board.get_next_space(board_size, space_from, direction)
         if space_to == None:
             return False
 
@@ -145,22 +135,7 @@ def is_valid_move_part(state, space_to, pieces):
         and abs(pieces[0]) == Stone.CAPITAL.value \
         and top_piece == Stone.STANDING.value
 
-def get_next_space(board_size, space_from, direction):
 
-    row, col = space_from
-    if (direction == Direction.UP.value):
-        row -= 1
-    if (direction == Direction.DOWN.value):
-        row += 1
-    if (direction == Direction.LEFT.value):
-        col -= 1
-    if (direction == Direction.RIGHT.value):
-        col += 1
-
-    space_to = (row, col)
-    if space_to[0] not in range(board_size) or space_to[1] not in range(board_size):
-        return None
-    return space_to
 
 def get_combinations(variants):
     """ Returns combinations given varients dictionary """

@@ -87,9 +87,11 @@ def draw_lines(pygame, screen, board_size, block_size):
 def get_image(pygame, piece):
     return {
         Stone.FLAT.value: get_image_from_filename(pygame, 'white.png'),
-        Stone.STANDING.value: get_image_from_filename(pygame, 'white_standing.png'),
         Stone.FLAT.value * -1: get_image_from_filename(pygame, 'black.png'),
+        Stone.STANDING.value: get_image_from_filename(pygame, 'white_standing.png'),
         Stone.STANDING.value * -1: get_image_from_filename(pygame, 'black_standing.png'),
+        Stone.CAPITAL.value: get_image_from_filename(pygame, 'white_capital.png'),
+        Stone.CAPITAL.value * -1: get_image_from_filename(pygame, 'black_capital.png'),
     }[piece]
 
 def get_image_from_filename(pygame, filename):

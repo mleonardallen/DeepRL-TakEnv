@@ -90,27 +90,6 @@ def describe_is_valid_move_part():
   def it_is_not_valid_to_move_onto_capital(state):
     assert space.is_valid_move_part(state, (0,2), [1]) == False
 
-def describe_get_next_space():
-
-  @fixture
-  def board_size():
-    return 3
-
-  def it_gets_next_space_up(board_size):
-    assert space.get_next_space(board_size, (1,1), Direction.UP.value) == (0,1)
-
-  def it_gets_next_space_down(board_size):
-    assert space.get_next_space(board_size, (1,1), Direction.DOWN.value) == (2,1)
-
-  def it_gets_next_space_left(board_size):
-    assert space.get_next_space(board_size, (1,1), Direction.LEFT.value) == (1,0)
-
-  def it_gets_next_space_right(board_size):
-    assert space.get_next_space(board_size, (1,1), Direction.RIGHT.value) == (1,2)
-
-  def it_returns_none_if_invalid(board_size):
-    assert space.get_next_space(board_size, (0,0), Direction.UP.value) == None
-
 def describe_get_partitions():
   def it_returns_permutations_that_add_up_to_n():
     assert(list(space.get_partitions(2))) == [(1, 1), (2,)]
